@@ -221,7 +221,7 @@ if(USE_BUNDLED_LIBVTERM)
   include(BuildLibvterm)
 endif()
 
-if(USE_BUNDLED_LIBUV)
+if(FALSE)
   include(BuildLibuv)
 endif()
 

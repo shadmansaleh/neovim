@@ -27,6 +27,7 @@ function(BuildLuajit)
       -DTARGET=${_luajit_TARGET}
       -DUSE_EXISTING_SRC_DIR=${USE_EXISTING_SRC_DIR}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/DownloadAndExtractFile.cmake
+    PATCH_COMMAND "${LIBLUAJIT_PATCH_COMMAND}"
     CONFIGURE_COMMAND "${_luajit_CONFIGURE_COMMAND}"
     BUILD_IN_SOURCE 1
     BUILD_COMMAND "${_luajit_BUILD_COMMAND}"
@@ -39,6 +40,9 @@ function(BuildLuajit)
       COMMAND ${CMAKE_COMMAND} -E create_symlink luajit-2.1.0-beta3 ${DEPS_BIN_DIR}/luajit)
   endif()
 endfunction()
+
+set(LIBLUAJIT_PATCH_COMMAND COMMAND git -C ${DEPS_BUILD_DIR}/src/luajit apply
+    --ignore-whitespace ${CMAKE_CURRENT_SOURCE_DIR}/patches/luajit-tmpdir.patch)
 
 check_c_compiler_flag(-fno-stack-check HAS_NO_STACK_CHECK)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin" AND HAS_NO_STACK_CHECK)
