@@ -200,9 +200,7 @@ if(USE_BUNDLED_BUSTED)
       list(APPEND LUV_DEPS libuv_host)
     endif()
     set(LUV_ARGS "CFLAGS=-O0 -g3 -fPIC")
-    if(USE_BUNDLED_LIBUV)
-      list(APPEND LUV_ARGS LIBUV_DIR=${HOSTDEPS_INSTALL_DIR})
-    endif()
+    list(APPEND LUV_ARGS LIBUV_DIR=/data/data/com.termux/files/usr)
     SET(LUV_PRIVATE_ARGS LUA_COMPAT53_INCDIR=${DEPS_BUILD_DIR}/src/lua-compat-5.3)
     add_custom_command(OUTPUT ${ROCKS_DIR}/luv
       COMMAND ${LUAROCKS_BINARY}
