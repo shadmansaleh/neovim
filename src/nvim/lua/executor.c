@@ -33,6 +33,7 @@
 #include "nvim/eval/userfunc.h"
 #include "nvim/event/time.h"
 #include "nvim/event/loop.h"
+#include "nvim/eval/typval.h"
 
 #include "nvim/os/os.h"
 
@@ -1809,3 +1810,64 @@ void nlua_execute_log_keystroke(int c)
 #endif
 }
 
+// Checks if str is in blacklist array
+bool is_in_blacklist(const char *str, char *blacklist[], int blacklist_size)
+{
+  for (int i = 0; i < blacklist_size; i++) {
+    if (strcmp(blacklist[i], str) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+// Get sctx of current file being sourc3d if doesn't exsist genarate it
+static sctx_T *nlua_get_sourcing_sctx(void)
+{
+  lua_State *const lstate = nlua_enter();
+  sctx_T *retval = (sctx_T *)xmalloc(sizeof(sctx_T));
+  retval->sc_seq = -1;
+  retval->sc_sid = SID_LUA;
+  retval->sc_lnum = -1;
+  lua_Debug *info = (lua_Debug *)xmalloc(sizeof(lua_Debug));
+
+  // Files where internal wrappers are defined so we can ignore them
+  // like vim.o/opt etc are defined in _meta.lua
+  char *blacklist[] = {
+    "vim/_meta.lua",
+  };
+  int blacklist_size = sizeof(blacklist) / sizeof(blacklist[0]);
+
+  for (int level = 1; true; level++) {
+    if (lua_getstack(lstate, level, info) != 1) {
+      goto cleanup;
+    }
+    if (lua_getinfo(lstate, "nSl", info) == 0) {
+      goto cleanup;
+    }
+
+    if (info->what[0] == 'C' || info->source[0] != '@'
+        || is_in_blacklist(info->source+1, blacklist, blacklist_size)) {
+      continue;
+    }
+    break;
+  }
+  char *source_path = fix_fname(info->source + 1);
+  get_current_script_id((const char_u *)source_path, retval);
+  retval->sc_lnum = info->currentline;
+  xfree(source_path);
+
+cleanup:
+  xfree(info);
+  return retval;
+}
+
+// Set lua sctx for verbose output when a lua file is being sourced
+// @param[out] current
+void nlua_set_sctx(sctx_T *current)
+{
+  if (current->sc_sid == SID_LUA) {
+    sctx_T *lua_sctx = nlua_get_sourcing_sctx();
+    *current = *lua_sctx;
+    xfree(lua_sctx);
+  }
+}
