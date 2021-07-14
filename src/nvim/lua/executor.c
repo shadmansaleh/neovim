@@ -1820,7 +1820,7 @@ sctx_T *nlua_get_sctx(void)
     }
 
     if (info->what[0] == 'C' || info->source[0] != '@'
-        || strstr(info->source, runtime_path) == info->source + 1) {
+        || strstr(info->source, runtime_path) != NULL) {
       continue;
     }
     break;
