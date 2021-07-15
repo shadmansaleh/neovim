@@ -47,6 +47,7 @@
 #include "nvim/os/os.h"
 #include "nvim/os/time.h"
 #include "nvim/buffer.h"
+#include "nvim/lua/executor.h"
 
 static bool did_syntax_onoff = false;
 
@@ -6682,6 +6683,7 @@ void do_highlight(const char *line, const bool forceit, const bool init)
         hlgroup->sg_deflink = to_id;
         hlgroup->sg_deflink_sctx = current_sctx;
         hlgroup->sg_deflink_sctx.sc_lnum += sourcing_lnum;
+        nlua_set_sctx(&hlgroup->sg_deflink_sctx);
       }
     }
 
@@ -6702,6 +6704,7 @@ void do_highlight(const char *line, const bool forceit, const bool init)
         hlgroup->sg_link = to_id;
         hlgroup->sg_script_ctx = current_sctx;
         hlgroup->sg_script_ctx.sc_lnum += sourcing_lnum;
+        nlua_set_sctx(&hlgroup->sg_script_ctx);
         hlgroup->sg_cleared = false;
         redraw_all_later(SOME_VALID);
 
@@ -7082,6 +7085,7 @@ void do_highlight(const char *line, const bool forceit, const bool init)
     }
     HL_TABLE()[idx].sg_script_ctx = current_sctx;
     HL_TABLE()[idx].sg_script_ctx.sc_lnum += sourcing_lnum;
+    nlua_set_sctx(&HL_TABLE()[idx].sg_script_ctx);
   }
   xfree(key);
   xfree(arg);
