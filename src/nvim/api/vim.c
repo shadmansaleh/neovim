@@ -81,12 +81,13 @@ void api_vim_free_all_mem(void)
 /// @see |execute()|
 /// @see |nvim_command()|
 ///
+/// @param channel_id
 /// @param src      Vimscript code
 /// @param output   Capture and return all (non-error, non-shell |:!|) output
 /// @param[out] err Error details (Vim error), if any
 /// @return Output (non-error, non-shell |:!|) if `output` is true,
 ///         else empty string.
-String nvim_exec(String src, Boolean output, Error *err)
+String nvim_exec(uint64_t channel_id, String src, Boolean output, Error *err)
   FUNC_API_SINCE(7)
 {
   const int save_msg_silent = msg_silent;
@@ -101,11 +102,16 @@ String nvim_exec(String src, Boolean output, Error *err)
   if (output) {
     msg_silent++;
   }
+
+  const sctx_T save_current_sctx = api_set_sctx(channel_id);
+
   do_source_str(src.data, "nvim_exec()");
   if (output) {
     capture_ga = save_capture_ga;
     msg_silent = save_msg_silent;
   }
+
+  current_sctx = save_current_sctx;
   try_end(err);
 
   if (ERROR_SET(err)) {
@@ -1922,6 +1928,7 @@ ArrayOf(Dictionary) nvim_get_keymap(String mode)
 ///     nmap <nowait> <Space><NL> <Nop>
 /// </pre>
 ///
+/// @param channel_id
 /// @param  mode  Mode short-name (map command prefix: "n", "i", "v", "x", …)
 ///               or "!" for |:map!|, or empty string for |:map|.
 /// @param  lhs   Left-hand-side |{lhs}| of the mapping.
@@ -1930,11 +1937,11 @@ ArrayOf(Dictionary) nvim_get_keymap(String mode)
 ///               as keys excluding |<buffer>| but including |noremap|.
 ///               Values are Booleans. Unknown key is an error.
 /// @param[out]   err   Error details, if any.
-void nvim_set_keymap(String mode, String lhs, String rhs,
+void nvim_set_keymap(uint64_t channel_id, String mode, String lhs, String rhs,
                      Dictionary opts, Error *err)
   FUNC_API_SINCE(6)
 {
-  modify_keymap(-1, false, mode, lhs, rhs, opts, err);
+  modify_keymap(channel_id, -1, false, mode, lhs, rhs, opts, err);
 }
 
 /// Unmaps a global |mapping| for the given mode.
@@ -1942,10 +1949,10 @@ void nvim_set_keymap(String mode, String lhs, String rhs,
 /// To unmap a buffer-local mapping, use |nvim_buf_del_keymap()|.
 ///
 /// @see |nvim_set_keymap()|
-void nvim_del_keymap(String mode, String lhs, Error *err)
+void nvim_del_keymap(uint64_t channel_id, String mode, String lhs, Error *err)
   FUNC_API_SINCE(6)
 {
-  nvim_buf_del_keymap(-1, mode, lhs, err);
+  nvim_buf_del_keymap(channel_id, -1, mode, lhs, err);
 }
 
 /// Gets a map of global (non-buffer-local) Ex commands.

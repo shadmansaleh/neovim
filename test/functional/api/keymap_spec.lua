@@ -14,6 +14,8 @@ local pcall_err = helpers.pcall_err
 local shallowcopy = helpers.shallowcopy
 local sleep = helpers.sleep
 
+local sid_api_client = -9
+
 describe('nvim_get_keymap', function()
   before_each(clear)
 
@@ -350,7 +352,7 @@ describe('nvim_set_keymap, nvim_del_keymap', function()
     to_return.silent = not opts.silent and 0 or 1
     to_return.nowait = not opts.nowait and 0 or 1
     to_return.expr = not opts.expr and 0 or 1
-    to_return.sid = not opts.sid and 0 or opts.sid
+    to_return.sid = not opts.sid and sid_api_client or opts.sid
     to_return.buffer = not opts.buffer and 0 or opts.buffer
     to_return.lnum = not opts.lnum and 0 or opts.lnum
 
@@ -574,7 +576,7 @@ describe('nvim_set_keymap, nvim_del_keymap', function()
   it('interprets control sequences in expr-quotes correctly when called '
      ..'inside vim', function()
     command([[call nvim_set_keymap('i', "\<space>", "\<tab>", {})]])
-    eq(generate_mapargs('i', '<Space>', '\t', {}),
+    eq(generate_mapargs('i', '<Space>', '\t', {sid=0}),
        get_mapargs('i', '<Space>'))
     feed('i ')
     eq({'\t'}, curbufmeths.get_lines(0, -1, 0))

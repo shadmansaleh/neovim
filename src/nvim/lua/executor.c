@@ -1823,7 +1823,7 @@ bool is_in_blacklist(const char *str, char *blacklist[], int blacklist_size)
 // Get sctx of current file being sourc3d if doesn't exsist genarate it
 static sctx_T *nlua_get_sourcing_sctx(void)
 {
-  lua_State *const lstate = nlua_enter();
+  lua_State *const lstate = global_lstate;
   sctx_T *retval = (sctx_T *)xmalloc(sizeof(sctx_T));
   retval->sc_seq = -1;
   retval->sc_sid = SID_LUA;

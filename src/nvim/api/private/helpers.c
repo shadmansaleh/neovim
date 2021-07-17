@@ -400,10 +400,7 @@ void set_option_to(uint64_t channel_id, void *to, int type,
     stringval = (char *)value.data.string.data;
   }
 
-  const sctx_T save_current_sctx = current_sctx;
-  current_sctx.sc_sid =
-    channel_id == LUA_INTERNAL_CALL ? SID_LUA : SID_API_CLIENT;
-  current_sctx.sc_lnum = 0;
+  const sctx_T save_current_sctx = api_set_sctx(channel_id);
   current_channel_id = channel_id;
 
   const int opt_flags = (type == SREQ_WIN && !(flags & SOPT_GLOBAL))
@@ -806,8 +803,9 @@ Array string_to_array(const String input, bool crlf)
 /// @param  buffer    Buffer handle for a specific buffer, or 0 for the current
 ///                   buffer, or -1 to signify global behavior ("all buffers")
 /// @param  is_unmap  When true, removes the mapping that matches {lhs}.
-void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs,
-                   String rhs, Dictionary opts, Error *err)
+void modify_keymap(uint64_t channel_id, Buffer buffer, bool is_unmap,
+                   String mode, String lhs, String rhs, Dictionary opts,
+                   Error *err)
 {
   char *err_msg = NULL;  // the error message to report, if any
   char *err_arg = NULL;  // argument for the error message format string
@@ -825,6 +823,8 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs,
   if (!target_buf) {
     return;
   }
+
+  const sctx_T save_current_sctx = api_set_sctx(channel_id);
 
   MapArguments parsed_args;
   memset(&parsed_args, 0, sizeof(parsed_args));
@@ -922,6 +922,7 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs,
       goto fail_and_free;
   }  // switch
 
+  current_sctx = save_current_sctx;
   xfree(lhs_buf);
   xfree(rhs_buf);
   xfree(parsed_args.rhs);
@@ -933,6 +934,7 @@ fail_with_message:
   api_set_error(err, err_type, err_msg, err_arg);
 
 fail_and_free:
+  current_sctx = save_current_sctx;
   xfree(lhs_buf);
   xfree(rhs_buf);
   xfree(parsed_args.rhs);
@@ -2094,4 +2096,21 @@ bool parse_float_config(Dictionary config, FloatConfig *fconfig, bool reconf,
     return false;
   }
   return true;
+}
+
+/// Sets sctx for API calls.
+///
+/// @param channel_id     api clients id. Used to determine if it's a internal
+///                       call or a rpc call.
+/// @return returns       previous value of current_sctx. To be used
+///                       to be used for restoreing sctx to previos state.
+sctx_T api_set_sctx(uint64_t channel_id)
+{
+  sctx_T old_current_sctx = current_sctx;
+  if (channel_id != VIML_INTERNAL_CALL) {
+    current_sctx.sc_sid =
+      channel_id == LUA_INTERNAL_CALL ? SID_LUA : SID_API_CLIENT;
+    current_sctx.sc_lnum = 0;
+  }
+  return old_current_sctx;
 }
