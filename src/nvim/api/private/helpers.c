@@ -810,7 +810,7 @@ Array string_to_array(const String input, bool crlf)
 ///                   buffer, or -1 to signify global behavior ("all buffers")
 /// @param  is_unmap  When true, removes the mapping that matches {lhs}.
 void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs,
-                   String rhs, Dictionary opts, Error *err)
+                   map_rhs_T rhs, Dictionary opts, Error *err)
 {
   char *err_msg = NULL;  // the error message to report, if any
   char *err_arg = NULL;  // argument for the error message format string
@@ -836,9 +836,10 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs,
   }
   parsed_args.buffer = !global;
 
-  set_maparg_lhs_rhs((char_u *)lhs.data, lhs.size,
-                     (char_u *)rhs.data, rhs.size,
-                     CPO_TO_CPO_FLAGS, &parsed_args);
+  if(rhs.type == Map_Str) {
+    set_maparg_lhs_rhs((char_u *)lhs.data, lhs.size,
+                       rhs.val.str, strlen((const char *)rhs.val.str), CPO_TO_CPO_FLAGS, &parsed_args);
+  }
 
   if (parsed_args.lhs_len > MAXMAPLEN) {
     err_msg = "LHS exceeds maximum map length: %s";
@@ -881,14 +882,14 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs,
   assert(!(is_unmap && is_noremap));
 
   if (!is_unmap && (parsed_args.rhs_len == 0 && !parsed_args.rhs_is_noop)) {
-    if (rhs.size == 0) {  // assume that the user wants RHS to be a <Nop>
+    if (rhs.type == Map_NoOp) {  // assume that the user wants RHS to be a <Nop>
       parsed_args.rhs_is_noop = true;
     } else {
       // the given RHS was nonempty and not a <Nop>, but was parsed as if it
       // were empty?
       assert(false && "Failed to parse nonempty RHS!");
       err_msg = "Parsing of nonempty RHS failed: %s";
-      err_arg = rhs.data;
+      err_arg = (char *)rhs.val.str;
       err_type = kErrorTypeException;
       goto fail_with_message;
     }

@@ -104,9 +104,9 @@ setmetatable(vim, {
     elseif key == 'highlight' then
       t.highlight = require('vim.highlight')
       return t.highlight
-    elseif key == 'keymap' then
-      t.keymap = require('vim.keymap')
-      return t.keymap
+    -- elseif key == 'keymap' then
+    --   t.keymap = require('vim.keymap')
+    --   return t.keymap
     end
   end
 })

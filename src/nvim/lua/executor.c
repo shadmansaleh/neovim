@@ -403,6 +403,9 @@ static int nlua_wait(lua_State *lstate)
   return 2;
 }
 
+static int nlua_set_keymap(lua_State *lstate) {
+  return 0;
+}
 /// Initialize lua interpreter state
 ///
 /// Called by lua interpreter itself to initialize state.
@@ -516,6 +519,12 @@ static int nlua_state_init(lua_State *const lstate) FUNC_ATTR_NONNULL_ALL
 
   // internal vim._treesitter... API
   nlua_add_treesitter(lstate);
+
+  // vim.keymap
+  lua_createtable(lstate, 0, 0);
+  lua_pushcfunction(lstate, &nlua_set_keymap);
+  lua_setfield(lstate, -2, "set_keymap");
+  lua_setfield(lstate, -2, "keymap");
 
   lua_setglobal(lstate, "vim");
 

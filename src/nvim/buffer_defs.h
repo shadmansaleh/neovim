@@ -341,6 +341,23 @@ typedef struct {
   String save_inputbuf;
 } tasave_T;
 
+
+typedef union {
+  char_u *str;
+  LuaRef lua_ref;
+} map_rhs_val;
+
+typedef enum {
+  Map_Str,
+  Map_LuaRef,
+  Map_NoOp
+} map_rhs_type;
+
+// Holds maps rhs
+typedef struct {
+  map_rhs_val val;
+  map_rhs_type type;
+} map_rhs_T;
 /*
  * Structure used for mappings and abbreviations.
  */
@@ -348,7 +365,7 @@ typedef struct mapblock mapblock_T;
 struct mapblock {
   mapblock_T  *m_next;          // next mapblock in list
   char_u      *m_keys;          // mapped from, lhs
-  char_u      *m_str;           // mapped to, rhs
+  map_rhs_T      *m_str;           // mapped to, rhs
   char_u      *m_orig_str;      // rhs as entered by the user
   int m_keylen;                 // strlen(m_keys)
   int m_mode;                   // valid mode

@@ -2051,7 +2051,7 @@ static int vgetorpeek(bool advance)
             save_m_noremap = mp->m_noremap;
             save_m_silent = mp->m_silent;
             char_u *save_m_keys = NULL;     // only saved when needed
-            char_u *save_m_str = NULL;      // only saved when needed
+            // char_u *save_m_str = NULL;      // only saved when needed
 
             /*
              * Handle ":map <expr>": evaluate the {rhs} as an
@@ -2066,12 +2066,12 @@ static int vgetorpeek(bool advance)
               may_garbage_collect = false;
 
               save_m_keys = vim_strsave(mp->m_keys);
-              save_m_str = vim_strsave(mp->m_str);
-              s = eval_map_expr(save_m_str, NUL);
+              // save_m_str = vim_strsave(mp->m_str);
+              s = eval_map_expr(mp->m_str, NUL);
               vgetc_busy = save_vgetc_busy;
               may_garbage_collect = save_may_garbage_collect;
             } else {
-              s = mp->m_str;
+              s = vim_strsave(mp->m_str->val.str);
             }
 
             /*
@@ -2105,11 +2105,11 @@ static int vgetorpeek(bool advance)
                 noremap = REMAP_SKIP;
               i = ins_typebuf(s, noremap,
                   0, TRUE, cmd_silent || save_m_silent);
-              if (save_m_expr)
-                xfree(s);
+              // if (save_m_expr)
+              xfree(s);
             }
             xfree(save_m_keys);
-            xfree(save_m_str);
+            // xfree(save_m_str);
             if (i == FAIL) {
               c = -1;
               break;
@@ -2744,6 +2744,22 @@ int str_to_mapargs(const char_u *strargs, bool is_unmap, MapArguments *mapargs)
   return 0;
 }
 
+void clear_map_rhs(map_rhs_T *mp) {
+  switch(mp->type) {
+    case Map_Str:
+      xfree(mp->val.str);
+      mp->val.str = NULL;
+      break;
+    case Map_LuaRef:
+      api_free_luaref(mp->val.lua_ref);
+      mp->val.lua_ref = -1;
+      break;
+    case Map_NoOp:
+      break;
+  }
+  mp->type = Map_NoOp;
+}
+
 /// Sets or removes a mapping or abbreviation in buffer `buf`.
 ///
 /// @param maptype    @see do_map
@@ -2794,7 +2810,8 @@ int buf_do_map(int maptype, MapArguments *args, int mode, bool is_abbrev,
   validate_maphash();
 
   bool has_lhs = (args->lhs[0] != NUL);
-  bool has_rhs = (args->rhs[0] != NUL) || args->rhs_is_noop;
+  bool has_rhs = (args->rhs && (args->rhs->type == Map_Str && args->rhs->val.str[0] != NUL)
+                 || args->rhs->type == Map_LuaRef);
 
   // check for :unmap without argument
   if (maptype == 1 && !has_lhs) {
@@ -2946,8 +2963,13 @@ int buf_do_map(int maptype, MapArguments *args, int mode, bool is_abbrev,
           did_it = true;
         } else {                          // do we have a match?
           if (round) {              // second round: Try unmap "rhs" string
-            n = (int)STRLEN(mp->m_str);
-            p = mp->m_str;
+            if (mp->m_str->type == Map_Str) {
+              n = (int)STRLEN(mp->m_str->val.str);
+              p = (char_u *)mp->m_str->val.str;
+            } else {
+              n = 0;
+              p = NULL;
+            }
           } else {
             n = mp->m_keylen;
             p = mp->m_keys;
@@ -2984,9 +3006,12 @@ int buf_do_map(int maptype, MapArguments *args, int mode, bool is_abbrev,
             } else {  // new rhs for existing entry
               mp->m_mode &= ~mode;  // remove mode bits
               if (mp->m_mode == 0 && !did_it) {  // reuse entry
-                xfree(mp->m_str);
-                mp->m_str = vim_strsave(rhs);
-                xfree(mp->m_orig_str);
+                clear_map_rhs(mp->m_str);
+                if (mp->m_str->type == Map_Str) {
+                  xfree(mp->m_orig_str);
+                }
+                mp->m_str->type = Map_Str;
+                mp->m_str->val.str = vim_strsave(rhs);
                 mp->m_orig_str = vim_strsave(orig_rhs);
                 mp->m_noremap = noremap;
                 mp->m_nowait = args->nowait;
@@ -3050,6 +3075,7 @@ int buf_do_map(int maptype, MapArguments *args, int mode, bool is_abbrev,
 
   // Get here when adding a new entry to the maphash[] list or abbrlist.
   mp = xmalloc(sizeof(mapblock_T));
+  mp->m_str = xmalloc(sizeof(map_rhs_T));
 
   // If CTRL-C has been mapped, don't always use it for Interrupting.
   if (*lhs == Ctrl_C) {
@@ -3061,7 +3087,8 @@ int buf_do_map(int maptype, MapArguments *args, int mode, bool is_abbrev,
   }
 
   mp->m_keys = vim_strsave(lhs);
-  mp->m_str = vim_strsave(rhs);
+  mp->m_str->type = Map_Str;
+  mp->m_str->val.str = vim_strsave(rhs);
   mp->m_orig_str = vim_strsave(orig_rhs);
   mp->m_keylen = (int)STRLEN(mp->m_keys);
   mp->m_noremap = noremap;
@@ -3167,6 +3194,7 @@ static void mapblock_free(mapblock_T **mpp)
 
   mp = *mpp;
   xfree(mp->m_keys);
+  clear_map_rhs(mp->m_str);
   xfree(mp->m_str);
   xfree(mp->m_orig_str);
   *mpp = mp->m_next;
@@ -3361,8 +3389,9 @@ static void showmap(
 )
 {
   size_t len = 1;
+  char_u *lua_ref_text = (char_u *)"lua function";
 
-  if (message_filtered(mp->m_keys) && message_filtered(mp->m_str)) {
+  if (message_filtered(mp->m_keys) && (mp->m_str->type == Map_Str && message_filtered((char_u *)mp->m_str->val.str))) {
     return;
   }
 
@@ -3405,12 +3434,13 @@ static void showmap(
 
   /* Use FALSE below if we only want things like <Up> to show up as such on
    * the rhs, and not M-x etc, TRUE gets both -- webb */
-  if (*mp->m_str == NUL) {
+  if (mp->m_str->type == Map_NoOp) {
     msg_puts_attr("<Nop>", HL_ATTR(HLF_8));
   } else {
     // Remove escaping of CSI, because "m_str" is in a format to be used
     // as typeahead.
-    char_u *s = vim_strsave(mp->m_str);
+    char_u *s = vim_strsave((mp->m_str->type == Map_Str)
+                            ? (char_u *)mp->m_str->val.str : lua_ref_text);
     vim_unescape_csi(s);
     msg_outtrans_special(s, false, 0);
     xfree(s);
@@ -3501,8 +3531,8 @@ int map_to_exists_mode(const char *const rhs, const int mode, const bool abbr)
         mp = maphash[hash];
       }
       for (; mp; mp = mp->m_next) {
-        if ((mp->m_mode & mode)
-            && strstr((char *)mp->m_str, rhs) != NULL) {
+        if ((mp->m_mode & mode) && mp->m_str->type == Map_Str
+            && strstr((char *)mp->m_str->val.str, rhs) != NULL) {
           return true;
         }
       }
@@ -3804,7 +3834,7 @@ bool check_abbr(int c, char_u *ptr, int col, int mincol)
         break;
       }
     }
-    if (mp != NULL) {
+    if (mp != NULL && mp->m_str->type == Map_Str) {
       /*
        * Found a match:
        * Insert the rest of the abbreviation in typebuf.tb_buf[].
@@ -3849,9 +3879,9 @@ bool check_abbr(int c, char_u *ptr, int col, int mincol)
         (void)ins_typebuf(tb, 1, 0, true, mp->m_silent);
       }
       if (mp->m_expr)
-        s = eval_map_expr(mp->m_str, c);
+        s = eval_map_expr(mp->m_str->val.str, c);
       else
-        s = mp->m_str;
+        s = mp->m_str->val.str;
       if (s != NULL) {
         // insert the to string
         (void)ins_typebuf(s, mp->m_noremap, 0, true, mp->m_silent);
@@ -3879,7 +3909,7 @@ bool check_abbr(int c, char_u *ptr, int col, int mincol)
  */
 static char_u *
 eval_map_expr (
-    char_u *str,
+    map_rhs_T *rhs,
     int c                      // NUL or typed character for abbreviation
 )
 {
@@ -3891,10 +3921,6 @@ eval_map_expr (
   int save_msg_col;
   int save_msg_row;
 
-  /* Remove escaping of CSI, because "str" is in a format to be used as
-   * typeahead. */
-  expr = vim_strsave(str);
-  vim_unescape_csi(expr);
 
   save_cmd = save_cmdline_alloc();
 
@@ -3906,7 +3932,19 @@ eval_map_expr (
   save_cursor = curwin->w_cursor;
   save_msg_col = msg_col;
   save_msg_row = msg_row;
+  if (rhs->type == Map_Str) {
+  /* Remove escaping of CSI, because "str" is in a format to be used as
+   * typeahead. */
+  expr = vim_strsave(rhs->val.str);
+  vim_unescape_csi(expr);
   p = eval_to_string(expr, NULL, FALSE);
+  } else if (rhs->type == Map_LuaRef) {
+    Array args = ARRAY_DICT_INIT;
+    Object result = nlua_call_ref(rhs->val.lua_ref, NULL, args, true, NULL);
+    if (result.type == kObjectTypeString){
+      p = vim_strsave((char_u *)result.data.string.data);
+    }
+  }
   --textlock;
   --ex_normal_lock;
   curwin->w_cursor = save_cursor;
@@ -4017,7 +4055,7 @@ makemap(
         }
       }
 
-      for (; mp; mp = mp->m_next) {
+      for (; mp && mp->m_str->type == Map_Str; mp = mp->m_next) {
         // skip script-local mappings
         if (mp->m_noremap == REMAP_SCRIPT) {
           continue;
@@ -4025,7 +4063,7 @@ makemap(
 
         // skip mappings that contain a <SNR> (script-local thing),
         // they probably don't work when loaded again
-        for (p = mp->m_str; *p != NUL; p++) {
+        for (p = mp->m_str->val.str; *p != NUL; p++) {
           if (p[0] == K_SPECIAL && p[1] == KS_EXTRA
               && p[2] == (int)KE_SNR) {
             break;
@@ -4128,11 +4166,11 @@ makemap(
           // When outputting <> form, need to make sure that 'cpo'
           // is set to the Vim default.
           if (!did_cpo) {
-            if (*mp->m_str == NUL) {  // Will use <Nop>.
+            if (*mp->m_str->val.str == NUL) {  // Will use <Nop>.
               did_cpo = true;
             } else {
               const char specials[] = { (char)(uint8_t)K_SPECIAL, NL, NUL };
-              if (strpbrk((const char *)mp->m_str, specials) != NULL
+              if (strpbrk((const char *)mp->m_str->val.str, specials) != NULL
                   || strpbrk((const char *)mp->m_keys, specials) != NULL) {
                 did_cpo = true;
               }
@@ -4171,7 +4209,7 @@ makemap(
           if (putc(' ', fd) < 0
               || put_escstr(fd, mp->m_keys, 0) == FAIL
               || putc(' ', fd) < 0
-              || put_escstr(fd, mp->m_str, 1) == FAIL
+              || put_escstr(fd, mp->m_str->val.str, 1) == FAIL
               || put_eol(fd) < 0) {
             return FAIL;
           }
@@ -4343,7 +4381,9 @@ check_map (
               *mp_ptr = mp;
             if (local_ptr != NULL)
               *local_ptr = local;
-            return mp->m_str;
+            if (mp->m_str->type == Map_Str) {
+              return mp->m_str->val.str;
+            }
           }
         }
       }

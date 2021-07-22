@@ -48,7 +48,7 @@ struct map_arguments {
   char_u lhs[MAXMAPLEN + 1];
   size_t lhs_len;
 
-  char_u *rhs;  /// The {rhs} of the mapping.
+  map_rhs_T *rhs;  /// The {rhs} of the mapping.
   size_t rhs_len;
   bool rhs_is_noop;  /// True when the {orig_rhs} is <nop>.
 

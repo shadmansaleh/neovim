@@ -1937,7 +1937,10 @@ void nvim_set_keymap(String mode, String lhs, String rhs,
                      Dictionary opts, Error *err)
   FUNC_API_SINCE(6)
 {
-  modify_keymap(-1, false, mode, lhs, rhs, opts, err);
+  map_rhs_T mp_rhs;
+  mp_rhs.type = Map_Str;
+  mp_rhs.val.str = (char_u *)rhs.data;
+  modify_keymap(-1, false, mode, lhs, mp_rhs, opts, err);
 }
 
 /// Unmaps a global |mapping| for the given mode.

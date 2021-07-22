@@ -876,7 +876,10 @@ void nvim_buf_set_keymap(Buffer buffer, String mode, String lhs, String rhs,
                          Dictionary opts, Error *err)
   FUNC_API_SINCE(6)
 {
-  modify_keymap(buffer, false, mode, lhs, rhs, opts, err);
+  map_rhs_T mp_rhs;
+  mp_rhs.type = Map_Str;
+  mp_rhs.val.str = (char_u *)rhs.data;
+  modify_keymap(buffer, false, mode, lhs, mp_rhs, opts, err);
 }
 
 /// Unmaps a buffer-local |mapping| for the given mode.
@@ -888,8 +891,11 @@ void nvim_buf_del_keymap(Buffer buffer, String mode, String lhs, Error *err)
   FUNC_API_SINCE(6)
 {
   String rhs = { .data = "", .size = 0 };
+  map_rhs_T mp_rhs;
+  mp_rhs.type = Map_Str;
+  mp_rhs.val.str = (char_u *)rhs.data;
   Dictionary opts = ARRAY_DICT_INIT;
-  modify_keymap(buffer, true, mode, lhs, rhs, opts, err);
+  modify_keymap(buffer, true, mode, lhs, mp_rhs, opts, err);
 }
 
 /// Gets a map of buffer-local |user-commands|.

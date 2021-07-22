@@ -6809,12 +6809,16 @@ void mapblock_fill_dict(dict_T *const dict,
     noremap_value = mp->m_noremap == REMAP_SCRIPT ? 2 : !!mp->m_noremap;
   }
 
-  if (compatible) {
-    tv_dict_add_str(dict, S_LEN("rhs"), (const char *)mp->m_orig_str);
-  } else {
-    tv_dict_add_allocated_str(dict, S_LEN("rhs"),
-                              str2special_save((const char *)mp->m_str, false,
-                                               true));
+  if (mp->m_str->type == Map_Str) {
+    if (compatible) {
+      tv_dict_add_str(dict, S_LEN("rhs"), (const char *)mp->m_orig_str);
+    } else {
+      tv_dict_add_allocated_str(dict, S_LEN("rhs"),
+          str2special_save((const char *)mp->m_str, false,
+            true));
+    }
+  } else if (mp->m_str->type == Map_LuaRef) {
+    tv_dict_add_str(dict, S_LEN("rhs"), "lua function");
   }
   tv_dict_add_allocated_str(dict, S_LEN("lhs"), lhs);
   tv_dict_add_nr(dict, S_LEN("noremap"), noremap_value);
