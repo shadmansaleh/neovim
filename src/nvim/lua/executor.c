@@ -1865,7 +1865,7 @@ cleanup:
 // @param[out] current
 void nlua_set_sctx(sctx_T *current)
 {
-  if (current->sc_sid == SID_LUA) {
+  if (p_verbose > 0 && current->sc_sid == SID_LUA) {
     sctx_T *lua_sctx = nlua_get_sourcing_sctx();
     *current = *lua_sctx;
     xfree(lua_sctx);

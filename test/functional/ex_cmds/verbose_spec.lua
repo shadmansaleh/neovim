@@ -8,7 +8,7 @@ local write_file = helpers.write_file
 local call_viml_function = helpers.meths.call_function
 
 describe('lua verbose:', function()
-  clear()
+  clear{args={'-V1'}}
 
   local script_file = 'test_luafile.lua'
   local current_dir = call_viml_function('getcwd', {})
