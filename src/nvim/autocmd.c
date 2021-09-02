@@ -149,7 +149,7 @@ static void show_autocmd(AutoPat *ap, event_T event)
       return;
     }
     msg_outtrans(ac->cmd);
-    if (p_verbose > 0) {
+    if (p_verbose > 1) {
       last_set_msg(ac->script_ctx);
     }
     if (got_int) {

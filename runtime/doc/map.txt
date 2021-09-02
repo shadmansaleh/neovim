@@ -499,7 +499,7 @@ The |:filter| command can be used to select what mappings to list.  The
 pattern is matched against the {lhs} and {rhs} in the raw form.
 
 							*:map-verbose*
-When 'verbose' is non-zero, listing a key map will also display where it was
+When 'verbose' is 2 or higher, listing a key map will also display where it was
 last defined.  Example: >
 
 	:verbose map <C-W>*
@@ -992,7 +992,7 @@ used in a |filetype-plugin| file.  Example for a C plugin file: >
 			mappings, see |map-listing|.
 
 						*:abbreviate-verbose*
-When 'verbose' is non-zero, listing an abbreviation will also display where it
+When 'verbose' is 2 or higher, listing an abbreviation will also display where it
 was last defined.  Example: >
 
 	:verbose abbreviate
@@ -1208,7 +1208,7 @@ scripts.
 :com[mand] {cmd}	List the user-defined commands that start with {cmd}
 
 							*:command-verbose*
-When 'verbose' is non-zero, listing a command will also display where it was
+When 'verbose' is 2 or higher, listing a command will also display where it was
 last defined. Example: >
 
     :verbose command TOhtml

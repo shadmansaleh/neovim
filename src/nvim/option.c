@@ -1171,7 +1171,7 @@ int do_set(
         }
         if (opt_idx >= 0) {
           showoneopt(&options[opt_idx], opt_flags);
-          if (p_verbose > 0) {
+          if (p_verbose > 1) {
             // Mention where the option was last set.
             if (varp == options[opt_idx].var) {
               option_last_set_msg(options[opt_idx].last_set);

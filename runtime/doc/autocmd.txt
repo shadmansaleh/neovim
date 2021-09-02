@@ -172,7 +172,7 @@ In order to list buffer-local autocommands, use a pattern in the form <buffer>
 or <buffer=N>.  See |autocmd-buflocal|.
 
 							*:autocmd-verbose*
-When 'verbose' is non-zero, listing an autocommand will also display where it
+When 'verbose' is 2 or higher, listing an autocommand will also display where it
 was last defined. Example: >
 
     :verbose autocmd BufEnter

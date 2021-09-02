@@ -97,7 +97,7 @@ If you make an error in one of the arguments, an error message will be given
 and the following arguments will be ignored.
 
 							*:set-verbose*
-When 'verbose' is non-zero, displaying an option value will also tell where it
+When 'verbose' is 2 or higher, displaying an option value will also tell where it
 was last set.  Example: >
 	:verbose set shiftwidth cindent?
 <  shiftwidth=4 ~

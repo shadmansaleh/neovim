@@ -3425,7 +3425,7 @@ static void showmap(
     msg_outtrans_special(s, false, 0);
     xfree(s);
   }
-  if (p_verbose > 0) {
+  if (p_verbose > 1) {
     last_set_msg(mp->m_script_ctx);
   }
   ui_flush();                          // show one line at a time

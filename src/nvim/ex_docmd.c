@@ -2264,7 +2264,7 @@ int parse_command_modifiers(exarg_T *eap, char_u **errormsg, bool skip_only)
         if (ascii_isdigit(*eap->cmd)) {
           p_verbose = atoi((char *)eap->cmd);
         } else {
-          p_verbose = 1;
+          p_verbose = 2;
         }
       }
       eap->cmd = p;
@@ -5361,7 +5361,7 @@ static void uc_list(char_u *name, size_t name_len)
 
       msg_outtrans_special(cmd->uc_rep, false,
                            name_len == 0 ? Columns - 47 : 0);
-      if (p_verbose > 0) {
+      if (p_verbose > 1) {
         last_set_msg(cmd->uc_script_ctx);
       }
       line_breakcheck();

@@ -9960,7 +9960,7 @@ functions.
 				:function /File$
 <
 							*:function-verbose*
-When 'verbose' is non-zero, listing a function will also display where it was
+When 'verbose' is 2 or higher, listing a function will also display where it was
 last defined. Example: >
 
     :verbose function SetFileTypeSH

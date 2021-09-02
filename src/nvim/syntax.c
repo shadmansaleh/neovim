@@ -7217,7 +7217,7 @@ static void highlight_list_one(const int id)
   if (!didh) {
     highlight_list_arg(id, didh, LIST_STRING, 0, "cleared", "");
   }
-  if (p_verbose > 0) {
+  if (p_verbose > 1) {
     last_set_msg(sgp->sg_script_ctx);
   }
 }

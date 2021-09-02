@@ -1682,7 +1682,7 @@ static void list_func_head(ufunc_T *fp, int indent, bool force)
     msg_puts(" closure");
   }
   msg_clr_eos();
-  if (p_verbose > 0) {
+  if (p_verbose > 1) {
     last_set_msg(fp->uf_script_ctx);
   }
 }
