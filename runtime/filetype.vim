@@ -30,7 +30,7 @@ au BufNewFile,BufRead ?\+.in
 	\ if expand("<afile>:t") != "configure.in" |
 	\   exe "doau filetypedetect BufRead " . fnameescape(expand("<afile>:r")) |
 	\ endif
-elseif &verbose > 0
+elseif &verbose > 1
   echomsg "Warning: some filetypes will not be recognized because this version of Vim does not have fnameescape()"
 endif
 

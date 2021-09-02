@@ -5827,7 +5827,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 			This may invoke |spellsuggest()| if you temporarily
 			set 'spellsuggest' to exclude the "expr:" part.
 			Errors are silently ignored, unless you set the
-			'verbose' option to a non-zero value.
+			'verbose' option to 2 or higher.
 
 	Only one of "best", "double" or "fast" may be used.  The others may
 	appear several times in any order.  Example: >
@@ -6663,8 +6663,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 			global
 	When bigger than zero, Vim will give messages about what it is doing.
 	Currently, these messages are given:
-	>= 1	When the shada file is read or written.
-	>= 2	When a file is ":source"'ed.
+	>= 2	When a file is ":source"'ed and When the shada file is read or written..
 	>= 3	UI info, terminal capabilities
 	>= 4	Shell commands.
 	>= 5	Every searched tags file and include file.
