@@ -3114,7 +3114,7 @@ static int spell_read_dic(spellinfo_T *spin, char_u *fname, afffile_T *affile)
     hash = hash_hash(dw);
     hi = hash_lookup(&ht, (const char *)dw, STRLEN(dw), hash);
     if (!HASHITEM_EMPTY(hi)) {
-      if (p_verbose > 0)
+      if (p_verbose > 1)
         smsg(_("Duplicate word in %s line %d: %s"),
              fname, lnum, dw);
       else if (duplicate == 0)

@@ -1190,7 +1190,7 @@ void u_write_undo(const char *const name, const bool forceit, buf_T *const buf,
   if (name == NULL) {
     file_name = u_get_undo_file_name((char *) buf->b_ffname, false);
     if (file_name == NULL) {
-      if (p_verbose > 0) {
+      if (p_verbose > 1) {
         verbose_enter();
         smsg("%s", _("Cannot write undo file in any directory in 'undodir'"));
         verbose_leave();
@@ -1224,7 +1224,7 @@ void u_write_undo(const char *const name, const bool forceit, buf_T *const buf,
       /* Check we can read it and it's an undo file. */
       fd = os_open(file_name, O_RDONLY, 0);
       if (fd < 0) {
-        if (name != NULL || p_verbose > 0) {
+        if (name != NULL || p_verbose > 1) {
           if (name == NULL)
             verbose_enter();
           smsg(_("Will not overwrite with undo file, cannot read: %s"),
@@ -1239,7 +1239,7 @@ void u_write_undo(const char *const name, const bool forceit, buf_T *const buf,
         close(fd);
         if (len < UF_START_MAGIC_LEN
             || memcmp(mbuf, UF_START_MAGIC, UF_START_MAGIC_LEN) != 0) {
-          if (name != NULL || p_verbose > 0) {
+          if (name != NULL || p_verbose > 1) {
             if (name == NULL)
               verbose_enter();
             smsg(_("Will not overwrite, this is not an undo file: %s"),
@@ -1257,7 +1257,7 @@ void u_write_undo(const char *const name, const bool forceit, buf_T *const buf,
   /* If there is no undo information at all, quit here after deleting any
    * existing undo file. */
   if (buf->b_u_numhead == 0 && buf->b_u_line_ptr == NULL) {
-    if (p_verbose > 0) {
+    if (p_verbose > 1) {
       verb_msg(_("Skipping undo file write, nothing to undo"));
     }
     goto theend;
@@ -1269,7 +1269,7 @@ void u_write_undo(const char *const name, const bool forceit, buf_T *const buf,
     goto theend;
   }
   (void)os_setperm(file_name, perm);
-  if (p_verbose > 0) {
+  if (p_verbose > 1) {
     verbose_enter();
     smsg(_("Writing undo file: %s"), file_name);
     verbose_leave();
@@ -1408,7 +1408,7 @@ void u_read_undo(char *name, const char_u *hash,
         && os_fileinfo((char *)file_name, &file_info_undo)
         && file_info_orig.stat.st_uid != file_info_undo.stat.st_uid
         && file_info_undo.stat.st_uid != getuid()) {
-      if (p_verbose > 0) {
+      if (p_verbose > 1) {
         verbose_enter();
         smsg(_("Not reading undo file, owner differs: %s"),
              file_name);
@@ -1421,7 +1421,7 @@ void u_read_undo(char *name, const char_u *hash,
     file_name = (char *) name;
   }
 
-  if (p_verbose > 0) {
+  if (p_verbose > 1) {
     verbose_enter();
     smsg(_("Reading undo file: %s"), file_name);
     verbose_leave();
@@ -1429,7 +1429,7 @@ void u_read_undo(char *name, const char_u *hash,
 
   FILE *fp = os_fopen(file_name, "r");
   if (fp == NULL) {
-    if (name != NULL || p_verbose > 0) {
+    if (name != NULL || p_verbose > 1) {
       EMSG2(_("E822: Cannot open undo file for reading: %s"), file_name);
     }
     goto error;
@@ -1460,7 +1460,7 @@ void u_read_undo(char *name, const char_u *hash,
   linenr_T line_count = (linenr_T)undo_read_4c(&bi);
   if (memcmp(hash, read_hash, UNDO_HASH_SIZE) != 0
       || line_count != curbuf->b_ml.ml_line_count) {
-    if (p_verbose > 0 || name != NULL) {
+    if (p_verbose > 1 || name != NULL) {
       if (name == NULL) {
         verbose_enter();
       }

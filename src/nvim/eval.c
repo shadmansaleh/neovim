@@ -994,7 +994,7 @@ list_T *eval_spell_expr(char_u *badword, char_u *expr)
   prepare_vimvar(VV_VAL, &save_val);
   vimvars[VV_VAL].vv_type = VAR_STRING;
   vimvars[VV_VAL].vv_str = badword;
-  if (p_verbose == 0)
+  if (p_verbose <= 1)
     ++emsg_off;
 
   if (eval1(&p, &rettv, true) == OK) {
@@ -1005,7 +1005,7 @@ list_T *eval_spell_expr(char_u *badword, char_u *expr)
     }
   }
 
-  if (p_verbose == 0)
+  if (p_verbose <= 1)
     --emsg_off;
   restore_vimvar(VV_VAL, &save_val);
 
@@ -5156,7 +5156,7 @@ bool garbage_collect(bool testing)
     // 3. Check if any funccal can be freed now.
     //    This may call us back recursively.
     did_free = free_unref_funccal(copyID, testing) || did_free;
-  } else if (p_verbose > 0) {
+  } else if (p_verbose > 1) {
     verb_msg(_(
         "Not enough memory to set references, garbage collection aborted!"));
   }

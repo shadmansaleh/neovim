@@ -705,7 +705,7 @@ static int diff_write_buffer(buf_T *buf, diffin_T *din)
     // the whole buffer text into memory.  Set the failed flag, the diff
     // will be retried with external diff.  The flag is never reset.
     buf->b_diff_failed = true;
-    if (p_verbose > 0) {
+    if (p_verbose > 1) {
       verbose_enter();
       smsg(_("Not enough memory to use internal diff for buffer \"%s\""),
            buf->b_fname);

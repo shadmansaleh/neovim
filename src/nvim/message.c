@@ -2568,7 +2568,7 @@ static void msg_puts_printf(const char *str, const ptrdiff_t maxlen)
 
   while ((maxlen < 0 || s - str < maxlen) && *s != NUL) {
     int len = utf_ptr2len((const char_u *)s);
-    if (!(silent_mode && p_verbose == 0)) {
+    if (!(silent_mode && p_verbose <= 1)) {
       // NL --> CR NL translation (for Unix, not for "--version")
       p = &buf[0];
       if (*s == '\n' && !info_message) {

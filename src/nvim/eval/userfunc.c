@@ -2285,7 +2285,7 @@ void ex_function(exarg_T *eap)
           nextcmd = p + 1;
         } else if (line_arg != NULL && *skipwhite(line_arg) != NUL) {
           nextcmd = line_arg;
-        } else if (*p != NUL && *p != '"' && p_verbose > 0) {
+        } else if (*p != NUL && *p != '"' && p_verbose > 1) {
           give_warning2((char_u *)_("W22: Text found after :endfunction: %s"),
                         p, true);
         }
