@@ -26,6 +26,12 @@ vim.api.nvim_exec("augroup test_group\
                      autocmd FileType c setl cindent\
                      augroup END\
                   ", false)
+vim.api.nvim_command("command Bdelete :bd")
+vim.api.nvim_exec ("\
+function Close_Window() abort\
+  wincmd -\
+endfunction\
+", false)
 ]])
   exec(':source '..script_file)
 
@@ -66,7 +72,7 @@ n  \key        * :echo "test"<CR>
        table.concat{current_dir, separator, script_file}), result)
   end)
 
-  it('Shows last set location when vim.cmd or vim.api.nvim_exec is used', function()
+  it('Shows last set location for autocmd through vim.api.nvim_exec', function()
     local result = exec_capture(':verbose autocmd test_group Filetype c')
     eq(string.format([[
 --- Autocommands ---
@@ -75,4 +81,44 @@ test_group  FileType
 	Last set from %s line 6]],
        table.concat{current_dir, separator, script_file}), result)
   end)
+  it('Shows last set location command is set through nvim_command', function()
+    local result = exec_capture(':verbose command Bdelete')
+    eq(string.format([[
+    Name              Args Address Complete    Definition
+    Bdelete           0                        :bd
+	Last set from %s line 11]],
+       table.concat{current_dir, separator, script_file}), result)
+  end)
+  it('Shows last set location for function', function()
+    local result = exec_capture(':verbose function Close_Window')
+    eq(string.format([[
+   function Close_Window() abort
+	Last set from %s line 12
+1    wincmd -
+   endfunction]],
+       table.concat{current_dir, separator, script_file}), result)
+  end)
 end)
+
+describe('lua verbose:', function()
+  clear()
+
+  local script_file = 'test_luafile.lua'
+
+  write_file(script_file, [[
+vim.api.nvim_set_option('hlsearch', false)
+]])
+  exec(':source '..script_file)
+
+  teardown(function()
+    os.remove(script_file)
+  end)
+
+  it('is disabled when verbose = 0', function()
+    local result = exec_capture(':verbose set hlsearch?')
+    eq([[
+nohlsearch
+	Last set from Lua]], result)
+  end)
+end)
+
