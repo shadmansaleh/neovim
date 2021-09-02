@@ -10062,7 +10062,7 @@ See |:verbose-cmd| for more information.
 				\n command	command to execute next
 				" comment	always ignored
 				anything else	ignored, warning given when
-						'verbose' is non-zero
+						'verbose' is greater then 1
 			The support for a following command was added in Vim
 			8.0.0654, before that any argument was silently
 			ignored.

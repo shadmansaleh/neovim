@@ -18,7 +18,7 @@ function! spellfile#LoadFile(lang)
 
   " If the netrw plugin isn't loaded we silently skip everything.
   if !exists(":Nread")
-    if &verbose
+    if &verbose > 1
       echomsg 'spellfile#LoadFile(): Nread command is not available.'
     endif
     return
@@ -33,7 +33,7 @@ function! spellfile#LoadFile(lang)
 
   " I will say this only once!
   if has_key(s:donedict, lang . &enc)
-    if &verbose
+    if &verbose > 1
       echomsg 'spellfile#LoadFile(): Tried this language/encoding before.'
     endif
     return
@@ -44,7 +44,7 @@ function! spellfile#LoadFile(lang)
   let [dirlist, dirchoices] = spellfile#GetDirChoices()
   if len(dirlist) == 0
     let dir_to_create = spellfile#WritableSpellDir()
-    if &verbose || dir_to_create != ''
+    if &verbose > 1 || dir_to_create != ''
       echomsg 'spellfile#LoadFile(): No (writable) spell directory found.'
     endif
     if dir_to_create != ''
