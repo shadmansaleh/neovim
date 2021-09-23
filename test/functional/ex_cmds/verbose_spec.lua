@@ -8,15 +8,16 @@ local write_file = helpers.write_file
 local call_viml_function = helpers.meths.call_function
 
 describe('lua :verbose', function()
-  -- All test cases below use the same nvim instance.
-  clear{args={'-V1'}}
-
-  local script_file = 'test_verbose.lua'
-  local current_dir = call_viml_function('getcwd', {})
-  current_dir = call_viml_function('fnamemodify', {current_dir, ':~'})
+  local script_file, current_dir
   local separator = helpers.get_pathsep()
+  -- All test cases below use the same nvim instance.
+  setup(function()
+    clear{args={'-V1'}}
+    script_file = 'test_verbose.lua'
+    current_dir = call_viml_function('getcwd', {})
+    current_dir = call_viml_function('fnamemodify', {current_dir, ':~'})
 
-  write_file(script_file, [[
+    write_file(script_file, [[
 vim.api.nvim_set_option('hlsearch', false)
 vim.bo.expandtab = true
 vim.opt.number = true
@@ -34,7 +35,8 @@ function Close_Window() abort\
 endfunction\
 ", false)
 ]])
-  exec(':source '..script_file)
+    exec(':source '..script_file)
+  end)
 
   teardown(function()
     os.remove(script_file)
