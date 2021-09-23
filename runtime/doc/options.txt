@@ -435,6 +435,15 @@ chance that a normal word like "lex:" is caught.  There is one exception:
 version 3.0).  Using "ex:" at the start of the line will be ignored (this
 could be short for "example:").
 
+If the modeline is disabled within a modeline, subsequent modelines will be
+ignored.  This is to allow turning off modeline on a per-file basis.  This is
+useful when a line looks like a modeline but isn't.  For example, it would be
+good to start a YAML file containing strings like "vim:" with
+    # vim: nomodeline ~
+so as to avoid modeline misdetection.  Following options on the same line
+after modeline deactivation, if any, are still evaluated (but you would
+normally not have any).
+
 							*modeline-local*
 The options are set like with ":setlocal": The new value only applies to the
 buffer and window that contain the file.  Although it's possible to set global
@@ -3742,16 +3751,25 @@ A jump table for the options with a short description can be found at |Q_op|.
 							*lcs-space*
 	  space:c	Character to show for a space.  When omitted, spaces
 			are left blank.
+							*lcs-multispace*
+	  multispace:c...
+	 		One or more characters to use cyclically to show for
+	 		multiple consecutive spaces.  Overrides the "space"
+			setting, except for single spaces.  When omitted, the
+			"space" setting is used.  For example,
+			`:set listchars=multispace:---+` shows ten consecutive
+			spaces as:
+				---+---+--
 							*lcs-lead*
 	  lead:c	Character to show for leading spaces.  When omitted,
-			leading spaces are blank.  Overrides the "space"
-			setting for leading spaces.  You can combine it with
-			"tab:", for example: >
+			leading spaces are blank.  Overrides the "space" and
+			"multispace" settings for leading spaces.  You can
+			combine it with "tab:", for example: >
 				:set listchars+=tab:>-,lead:.
 <							*lcs-trail*
 	  trail:c	Character to show for trailing spaces.  When omitted,
-			trailing spaces are blank.  Overrides the "space"
-			setting for trailing spaces.
+			trailing spaces are blank.  Overrides the "space" and
+			"multispace" settings for trailing spaces.
 							*lcs-extends*
 	  extends:c	Character to show in the last column, when 'wrap' is
 			off and the line continues beyond the right of the
@@ -3776,7 +3794,8 @@ A jump table for the options with a short description can be found at |Q_op|.
 	    :set lcs=tab:>-,eol:<,nbsp:%
 	    :set lcs=extends:>,precedes:<
 <	|hl-NonText| highlighting will be used for "eol", "extends" and
-	"precedes". |hl-Whitespace| for "nbsp", "space", "tab" and "trail".
+	"precedes". |hl-Whitespace| for "nbsp", "space", "tab", "multispace",
+	"lead" and "trail".
 
 			*'lpl'* *'nolpl'* *'loadplugins'* *'noloadplugins'*
 'loadplugins' 'lpl'	boolean	(default on)
@@ -3797,8 +3816,6 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Only switch it off when working with old Vi scripts.  In any other
 	situation write patterns that work when 'magic' is on.  Include "\M"
 	when you want to |/\M|.
-	In |Vim9| script the value of 'magic' is ignored, patterns behave like
-	it is always set.
 
 						*'makeef'* *'mef'*
 'makeef' 'mef'		string	(default: "")
@@ -4321,7 +4338,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 
 				*'packpath'* *'pp'*
 'packpath' 'pp'		string	(default: see 'runtimepath')
-	Directories used to find packages.  See |packages|.
+	Directories used to find packages.  See |packages| and |rtp-packages|.
 
 
 						*'paragraphs'* *'para'*
@@ -4352,19 +4369,21 @@ A jump table for the options with a short description can be found at |Q_op|.
 		- abbreviations are disabled
 		- 'autoindent' is reset
 		- 'expandtab' is reset
-		- 'formatoptions' is used like it is empty
+		- 'hkmap' is reset
 		- 'revins' is reset
 		- 'ruler' is reset
 		- 'showmatch' is reset
-		- 'smartindent' is reset
 		- 'smarttab' is reset
 		- 'softtabstop' is set to 0
 		- 'textwidth' is set to 0
 		- 'wrapmargin' is set to 0
+		- 'varsofttabstop' is made empty
 	These options keep their value, but their effect is disabled:
 		- 'cindent'
+		- 'formatoptions' is used like it is empty
 		- 'indentexpr'
 		- 'lisp'
+		- 'smartindent'
 	NOTE: When you start editing another file while the 'paste' option is
 	on, settings from the modelines or autocommands may change the
 	settings again, causing trouble when pasting text.  You might want to
@@ -4878,9 +4897,11 @@ A jump table for the options with a short description can be found at |Q_op|.
 	   ordering.  This is for preferences to overrule or add to the 
 	   distributed defaults or system-wide settings (rarely needed).
 
-	More entries are added when using |packages|.  If it gets very long
-	then `:set rtp` will be truncated, use `:echo &rtp` to see the full
-	string.
+							*rtp-packages*
+	"start" packages will additionally be used to search for runtime files
+	after these, but package entries are not visible in `:set rtp`.
+	See |runtime-search-path| for more information. "opt" packages
+	will be explicitly added to &rtp when |:packadd| is used.
 
 	Note that, unlike 'path', no wildcards like "**" are allowed.  Normal
 	wildcards are allowed, but can significantly slow down searching for
@@ -5474,7 +5495,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 
 						*'showbreak'* *'sbr'* *E595*
 'showbreak' 'sbr'	string	(default "")
-			global
+			global or local to window |global-local|
 	String to put at the start of lines that have been wrapped.  Useful
 	values are "> " or "+++ ": >
 		:set showbreak=>\ 
@@ -5488,7 +5509,10 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Note that tabs after the showbreak will be displayed differently.
 	If you want the 'showbreak' to appear in between line numbers, add the
 	"n" flag to 'cpoptions'.
-
+	A window-local value overrules a global value.  If the global value is
+	set and you want no value in the current window use NONE: >
+		:setlocal showbreak=NONE
+<
 				     *'showcmd'* *'sc'* *'noshowcmd'* *'nosc'*
 'showcmd' 'sc'		boolean	(Vim default: on, Vi default: off)
 			global
@@ -5748,6 +5772,8 @@ A jump table for the options with a short description can be found at |Q_op|.
 	If the name "cjk" is included East Asian characters are excluded from
 	spell checking.  This is useful when editing text that also has Asian
 	words.
+	Note that the "medical" dictionary does not exist, it is just an
+	example of a longer name.
 							*E757*
 	As a special case the name of a .spl file can be given as-is.  The
 	first "_xx" in the name is removed and used as the region name
@@ -6118,6 +6144,8 @@ A jump table for the options with a short description can be found at |Q_op|.
 'switchbuf' 'swb'	string	(default "uselast")
 			global
 	This option controls the behavior when switching between buffers.
+	Mostly for |quickfix| commands some values are also used for other
+ 	commands, as mentioned below.
 	Possible values (comma separated list):
 	   useopen	If included, jump to the first open window that
 			contains the specified buffer (if there is one).
@@ -6742,6 +6770,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 	The `g$` command will move to the end of the screen line.
 	It doesn't make sense to combine "all" with "onemore", but you will
 	not get a warning for it.
+	When combined with other words, "none" is ignored.
 
 			*'visualbell'* *'vb'* *'novisualbell'* *'novb'* *beep*
 'visualbell' 'vb'	boolean	(default off)
@@ -6792,8 +6821,9 @@ A jump table for the options with a short description can be found at |Q_op|.
 	More info here: |cmdline-completion|.
 	The character is not recognized when used inside a macro.  See
 	'wildcharm' for that.
+	Some keys will not work, such as CTRL-C, <CR> and Enter.
 	Although 'wc' is a number option, you can set it to a special key: >
-		:set wc=<Esc>
+		:set wc=<Tab>
 <
 
 						*'wildcharm'* *'wcm'*

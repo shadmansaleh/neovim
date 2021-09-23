@@ -3,40 +3,38 @@
 
 #include <math.h>
 
+#include <stdint.h>
+#include <string.h>
+
 #include "nvim/math.h"
 
 #ifdef INCLUDE_GENERATED_DECLARATIONS
 # include "math.c.generated.h"
 #endif
 
-#if defined(__clang__) && __clang__ == 1 && __clang_major__ >= 6
-// Workaround glibc + Clang 6+ bug. #8274
-// https://bugzilla.redhat.com/show_bug.cgi?id=1472437
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wconversion"
-#endif
 int xfpclassify(double d)
 {
-#if defined(__MINGW32__)
-  // Workaround mingw warning. #7863
-  return __fpclassify(d);
-#else
-  return fpclassify(d);
-#endif
+  uint64_t m;
+  int e;
+
+  memcpy(&m, &d, sizeof(m));
+  e = 0x7ff & (m >> 52);
+  m = 0xfffffffffffffULL & m;
+
+  switch (e) {
+  default:
+    return FP_NORMAL;
+  case 0x000:
+    return m ? FP_SUBNORMAL : FP_ZERO;
+  case 0x7ff:
+    return m ? FP_NAN : FP_INFINITE;
+  }
 }
 int xisinf(double d)
 {
-  return isinf(d);
+  return FP_INFINITE == xfpclassify(d);
 }
 int xisnan(double d)
 {
-#if defined(__MINGW32__)
-  // Workaround mingw warning. #7863
-  return _isnan(d);
-#else
-  return isnan(d);
-#endif
+  return FP_NAN == xfpclassify(d);
 }
-#if defined(__clang__) && __clang__ == 1 && __clang_major__ >= 6
-# pragma clang diagnostic pop
-#endif

@@ -674,11 +674,11 @@ function lsp.start_client(config)
   ---@param method (string) LSP method name
   ---@param params (table) The parameters for that method.
   function dispatch.notification(method, params)
-    local _ = log.debug() and log.debug('notification', method, params)
+    local _ = log.trace() and log.trace('notification', method, params)
     local handler = resolve_handler(method)
     if handler then
       -- Method name is provided here for convenience.
-      handler(nil, method, params, client_id)
+      handler(nil, params, {method=method, client_id=client_id})
     end
   end
 
@@ -688,13 +688,13 @@ function lsp.start_client(config)
   ---@param method (string) LSP method name
   ---@param params (table) The parameters for that method
   function dispatch.server_request(method, params)
-    local _ = log.debug() and log.debug('server_request', method, params)
+    local _ = log.trace() and log.trace('server_request', method, params)
     local handler = resolve_handler(method)
     if handler then
-      local _ = log.debug() and log.debug("server_request: found handler for", method)
-      return handler(nil, method, params, client_id)
+      local _ = log.trace() and log.trace("server_request: found handler for", method)
+      return handler(nil, params, {method=method, client_id=client_id})
     end
-    local _ = log.debug() and log.debug("server_request: no handler found for", method)
+    local _ = log.warn() and log.warn("server_request: no handler found for", method)
     return nil, lsp.rpc_response_error(protocol.ErrorCodes.MethodNotFound)
   end
 
@@ -826,7 +826,7 @@ function lsp.start_client(config)
       -- TODO(ashkan) handle errors here.
       pcall(config.before_init, initialize_params, config)
     end
-    local _ = log.debug() and log.debug(log_prefix, "initialize_params", initialize_params)
+    local _ = log.trace() and log.trace(log_prefix, "initialize_params", initialize_params)
     rpc.request('initialize', initialize_params, function(init_err, result)
       assert(not init_err, tostring(init_err))
       assert(result, "server sent empty result")
@@ -896,7 +896,7 @@ function lsp.start_client(config)
 
     local _ = log.debug() and log.debug(log_prefix, "client.request", client_id, method, params, handler, bufnr)
     return rpc.request(method, params, function(err, result)
-      handler(err, method, result, client_id, bufnr)
+      handler(err, result, {method=method, client_id=client_id, bufnr=bufnr, params=params})
     end)
   end
 
@@ -917,7 +917,7 @@ function lsp.start_client(config)
   ---@see |vim.lsp.buf_request_sync()|
   function client.request_sync(method, params, timeout_ms, bufnr)
     local request_result = nil
-    local function _sync_handler(err, _, result)
+    local function _sync_handler(err, result)
       request_result = { err = err, result = result }
     end
 
@@ -1276,7 +1276,7 @@ function lsp.buf_request(bufnr, method, params, handler)
     local unsupported_err = lsp._unsupported_method(method)
     handler = handler or lsp.handlers[method]
     if handler then
-      handler(unsupported_err, method, bufnr)
+      handler(unsupported_err, nil, {method=method, bufnr=bufnr})
     end
     return
   end
@@ -1316,8 +1316,8 @@ function lsp.buf_request_all(bufnr, method, params, callback)
     end
   end)
 
-  local function _sync_handler(err, _, result, client_id)
-    request_results[client_id] = { error = err, result = result }
+  local function _sync_handler(err, result, ctx)
+    request_results[ctx.client_id] = { error = err, result = result }
     result_count = result_count + 1
     set_expected_result_count()
 
@@ -1423,7 +1423,7 @@ function lsp.omnifunc(findstart, base)
   local params = util.make_position_params()
 
   local items = {}
-  lsp.buf_request(bufnr, 'textDocument/completion', params, function(err, _, result)
+  lsp.buf_request(bufnr, 'textDocument/completion', params, function(err, result)
     if err or not result or vim.fn.mode() ~= "i" then return end
     local matches = util.text_document_completion_list_to_complete_items(result, prefix)
     -- TODO(ashkan): is this the best way to do this?
@@ -1498,8 +1498,8 @@ end
 ---@param handler (function) See |lsp-handler|
 ---@param override_config (table) Table containing the keys to override behavior of the {handler}
 function lsp.with(handler, override_config)
-  return function(err, method, params, client_id, bufnr, config)
-    return handler(err, method, params, client_id, bufnr, vim.tbl_deep_extend("force", config or {}, override_config))
+  return function(err, result, ctx, config)
+    return handler(err, result, ctx, vim.tbl_deep_extend("force", config or {}, override_config))
   end
 end
 
@@ -1534,8 +1534,34 @@ function lsp._with_extend(name, options, user_config)
   return resulting_config
 end
 
--- Define the LspDiagnostics signs if they're not defined already.
-require('vim.lsp.diagnostic')._define_default_signs_and_highlights()
+
+--- Registry for client side commands.
+--- This is an extension point for plugins to handle custom commands which are
+--- not part of the core language server protocol specification.
+---
+--- The registry is a table where the key is a unique command name,
+--- and the value is a function which is called if any LSP action
+--- (code action, code lenses, ...) triggers the command.
+---
+--- If a LSP response contains a command for which no matching entry is
+--- available in this registry, the command will be executed via the LSP server
+--- using `workspace/executeCommand`.
+---
+--- The first argument to the function will be the `Command`:
+--    Command
+--      title: String
+--      command: String
+--      arguments?: any[]
+--
+--- The second argument is the `ctx` of |lsp-handler|
+lsp.commands = setmetatable({}, {
+  __newindex = function(tbl, key, value)
+    assert(type(key) == 'string', "The key for commands in `vim.lsp.commands` must be a string")
+    assert(type(value) == 'function', "Command added to `vim.lsp.commands` must be a function")
+    rawset(tbl, key, value)
+  end;
+})
+
 
 return lsp
 -- vim:sw=2 ts=2 et

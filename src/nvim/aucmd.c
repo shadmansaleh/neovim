@@ -1,16 +1,16 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check
 // it. PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 
-#include "nvim/os/os.h"
-#include "nvim/fileio.h"
-#include "nvim/vim.h"
-#include "nvim/main.h"
-#include "nvim/ui.h"
 #include "nvim/aucmd.h"
+#include "nvim/buffer.h"
 #include "nvim/eval.h"
 #include "nvim/ex_docmd.h"
 #include "nvim/ex_getln.h"
-#include "nvim/buffer.h"
+#include "nvim/fileio.h"
+#include "nvim/main.h"
+#include "nvim/os/os.h"
+#include "nvim/ui.h"
+#include "nvim/vim.h"
 
 #ifdef INCLUDE_GENERATED_DECLARATIONS
 # include "aucmd.c.generated.h"
@@ -41,7 +41,6 @@ void init_default_autocmds(void)
   // open terminals when opening files that start with term://
 #define PROTO "term://"
   do_cmdline_cmd("augroup nvim_terminal");
-  do_cmdline_cmd("autocmd!");
   do_cmdline_cmd("autocmd BufReadCmd " PROTO "* ++nested "
                  "if !exists('b:term_title')|call termopen("
                  // Capture the command string
@@ -56,7 +55,7 @@ void init_default_autocmds(void)
 
   // limit syntax synchronization in the command window
   do_cmdline_cmd("augroup nvim_cmdwin");
-  do_cmdline_cmd("autocmd! CmdWinEnter [:>] exe 'syntax sync minlines=1 maxlines='..&cmdwinheight");
+  do_cmdline_cmd("autocmd! CmdwinEnter [:>] syntax sync minlines=1 maxlines=1");
   do_cmdline_cmd("augroup END");
 }
 

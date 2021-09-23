@@ -187,6 +187,23 @@ CONFIG = {
         'module_override': {},
         'append_only': [],
     },
+    'diagnostic': {
+        'mode': 'lua',
+        'filename': 'diagnostic.txt',
+        'section_start_token': '*diagnostic-api*',
+        'section_order': [
+            'diagnostic.lua',
+        ],
+        'files': os.path.join(base_dir, 'runtime/lua/vim/diagnostic.lua'),
+        'file_patterns': '*.lua',
+        'fn_name_prefix': '',
+        'section_name': {'diagnostic.lua': 'diagnostic'},
+        'section_fmt': lambda _: 'Lua module: vim.diagnostic',
+        'helptag_fmt': lambda _: '*diagnostic-api*',
+        'fn_helptag_fmt': lambda fstem, name: f'*vim.{fstem}.{name}()*',
+        'module_override': {},
+        'append_only': [],
+    },
     'treesitter': {
         'mode': 'lua',
         'filename': 'treesitter.txt',
@@ -197,7 +214,6 @@ CONFIG = {
             'query.lua',
             'highlighter.lua',
             'languagetree.lua',
-            'health.lua',
         ],
         'files': ' '.join([
             os.path.join(base_dir, 'runtime/lua/vim/treesitter.lua'),
@@ -1131,7 +1147,7 @@ Doxyfile = textwrap.dedent('''
     INPUT_FILTER           = "{filter}"
     EXCLUDE                =
     EXCLUDE_SYMLINKS       = NO
-    EXCLUDE_PATTERNS       = */private/*
+    EXCLUDE_PATTERNS       = */private/* */health.lua */_*.lua
     EXCLUDE_SYMBOLS        =
     EXTENSION_MAPPING      = lua=C
     EXTRACT_PRIVATE        = NO

@@ -117,6 +117,19 @@ describe('API', function()
       nvim('exec','autocmd BufAdd * :let x1 = "Hello"', false)
       nvim('command', 'new foo')
       eq('Hello', request('nvim_eval', 'g:x1'))
+
+      -- Line continuations
+      nvim('exec', [[
+        let abc = #{
+          \ a: 1,
+         "\ b: 2,
+          \ c: 3
+          \ }]], false)
+      eq({a = 1, c = 3}, request('nvim_eval', 'g:abc'))
+
+      -- try no spaces before continuations to catch off-by-one error
+      nvim('exec', 'let ab = #{\n\\a: 98,\n"\\ b: 2\n\\}', false)
+      eq({a = 98}, request('nvim_eval', 'g:ab'))
     end)
 
     it('non-ASCII input', function()
@@ -520,7 +533,7 @@ describe('API', function()
       nvim("notify", "hello world", 2, {})
     end)
 
-    it('can be overriden', function()
+    it('can be overridden', function()
       command("lua vim.notify = function(...) return 42 end")
       eq(42, meths.exec_lua("return vim.notify('Hello world')", {}))
       nvim("notify", "hello world", 4, {})
@@ -1578,7 +1591,10 @@ describe('API', function()
       eq({'a', '', 'b'}, meths.list_runtime_paths())
       meths.set_option('runtimepath', ',a,b')
       eq({'', 'a', 'b'}, meths.list_runtime_paths())
+      -- trailing , is ignored, use ,, if you really really want $CWD
       meths.set_option('runtimepath', 'a,b,')
+      eq({'a', 'b'}, meths.list_runtime_paths())
+      meths.set_option('runtimepath', 'a,b,,')
       eq({'a', 'b', ''}, meths.list_runtime_paths())
     end)
     it('truncates too long paths', function()
@@ -1999,8 +2015,13 @@ describe('API', function()
       ok(endswith(val[1], p"autoload/remote/define.vim")
          or endswith(val[1], p"autoload/remote/host.vim"))
 
-      eq({}, meths.get_runtime_file("lua", true))
-      eq({}, meths.get_runtime_file("lua/vim", true))
+      val = meths.get_runtime_file("lua", true)
+      eq(1, #val)
+      ok(endswith(val[1], p"lua"))
+
+      val = meths.get_runtime_file("lua/vim", true)
+      eq(1, #val)
+      ok(endswith(val[1], p"lua/vim"))
     end)
 
     it('can find directories', function()

@@ -6,6 +6,7 @@ local funcs = helpers.funcs
 local meths = helpers.meths
 local dedent = helpers.dedent
 local command = helpers.command
+local insert = helpers.insert
 local clear = helpers.clear
 local eq = helpers.eq
 local ok = helpers.ok
@@ -738,7 +739,7 @@ describe('lua stdlib', function()
     eq({NIL, NIL}, exec_lua([[return vim.fn.Nilly()]]))
 
     -- error handling
-    eq({false, 'Vim:E714: List required'}, exec_lua([[return {pcall(vim.fn.add, "aa", "bb")}]]))
+    eq({false, 'Vim:E897: List or Blob required'}, exec_lua([[return {pcall(vim.fn.add, "aa", "bb")}]]))
   end)
 
   it('vim.fn should error when calling API function', function()
@@ -1881,7 +1882,7 @@ describe('lua stdlib', function()
   end)
 
   it('vim.region', function()
-    helpers.insert(helpers.dedent( [[
+    insert(helpers.dedent( [[
     text tααt tααt text
     text tαxt txtα tex
     text tαxt tαxt
@@ -1889,65 +1890,67 @@ describe('lua stdlib', function()
     eq({5,15}, exec_lua[[ return vim.region(0,{1,5},{1,14},'v',true)[1] ]])
   end)
 
-  describe('vim.execute_on_keystroke', function()
-    it('should keep track of keystrokes', function()
-      helpers.insert([[hello world ]])
+  describe('vim.on_key', function()
+    it('tracks keystrokes', function()
+      insert([[hello world ]])
 
       exec_lua [[
-        KeysPressed = {}
+        keys = {}
 
-        vim.register_keystroke_callback(function(buf)
+        vim.on_key(function(buf)
           if buf:byte() == 27 then
             buf = "<ESC>"
           end
 
-          table.insert(KeysPressed, buf)
+          table.insert(keys, buf)
         end)
       ]]
 
-      helpers.insert([[next 🤦 lines å ]])
+      insert([[next 🤦 lines å ]])
 
       -- It has escape in the keys pressed
-      eq('inext 🤦 lines å <ESC>', exec_lua [[return table.concat(KeysPressed, '')]])
+      eq('inext 🤦 lines å <ESC>', exec_lua [[return table.concat(keys, '')]])
     end)
 
-    it('should allow removing trackers.', function()
-      helpers.insert([[hello world]])
+    it('allows removing on_key listeners', function()
+      insert([[hello world]])
 
       exec_lua [[
-        KeysPressed = {}
+        keys = {}
 
-        return vim.register_keystroke_callback(function(buf)
+        return vim.on_key(function(buf)
           if buf:byte() == 27 then
             buf = "<ESC>"
           end
 
-          table.insert(KeysPressed, buf)
+          table.insert(keys, buf)
         end, vim.api.nvim_create_namespace("logger"))
       ]]
 
-      helpers.insert([[next lines]])
+      insert([[next lines]])
 
-      exec_lua("vim.register_keystroke_callback(nil, vim.api.nvim_create_namespace('logger'))")
+      eq(1, exec_lua('return vim.on_key()'))
+      exec_lua("vim.on_key(nil, vim.api.nvim_create_namespace('logger'))")
+      eq(0, exec_lua('return vim.on_key()'))
 
-      helpers.insert([[more lines]])
+      insert([[more lines]])
 
       -- It has escape in the keys pressed
-      eq('inext lines<ESC>', exec_lua [[return table.concat(KeysPressed, '')]])
+      eq('inext lines<ESC>', exec_lua [[return table.concat(keys, '')]])
     end)
 
-    it('should not call functions that error again.', function()
-      helpers.insert([[hello world]])
+    it('skips any function that caused an error', function()
+      insert([[hello world]])
 
       exec_lua [[
-        KeysPressed = {}
+        keys = {}
 
-        return vim.register_keystroke_callback(function(buf)
+        return vim.on_key(function(buf)
           if buf:byte() == 27 then
             buf = "<ESC>"
           end
 
-          table.insert(KeysPressed, buf)
+          table.insert(keys, buf)
 
           if buf == 'l' then
             error("Dumb Error")
@@ -1955,35 +1958,30 @@ describe('lua stdlib', function()
         end)
       ]]
 
-      helpers.insert([[next lines]])
-      helpers.insert([[more lines]])
+      insert([[next lines]])
+      insert([[more lines]])
 
       -- Only the first letter gets added. After that we remove the callback
-      eq('inext l', exec_lua [[ return table.concat(KeysPressed, '') ]])
+      eq('inext l', exec_lua [[ return table.concat(keys, '') ]])
     end)
 
-    it('should process mapped keys, not unmapped keys', function()
+    it('processes mapped keys, not unmapped keys', function()
       exec_lua [[
-        KeysPressed = {}
+        keys = {}
 
         vim.cmd("inoremap hello world")
 
-        vim.register_keystroke_callback(function(buf)
+        vim.on_key(function(buf)
           if buf:byte() == 27 then
             buf = "<ESC>"
           end
 
-          table.insert(KeysPressed, buf)
+          table.insert(keys, buf)
         end)
       ]]
+      insert("hello")
 
-      helpers.insert("hello")
-
-      local next_status = exec_lua [[
-        return table.concat(KeysPressed, '')
-      ]]
-
-      eq("iworld<ESC>", next_status)
+      eq('iworld<ESC>', exec_lua[[return table.concat(keys, '')]])
     end)
   end)
 
