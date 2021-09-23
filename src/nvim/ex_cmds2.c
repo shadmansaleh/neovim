@@ -2275,10 +2275,10 @@ theend:
 }
 
 
-// Check if fname was sourced before to finds its SID.
-// If it's new, generate a new SID.
-// @param[in] fname file path of script
-// @param[out] ret_sctx sctx of this script
+/// Check if fname was sourced before to finds its SID.
+/// If it's new, generate a new SID.
+/// @param[in] fname file path of script
+/// @param[out] ret_sctx sctx of this script
 scriptitem_T *get_current_script_id(const char_u *fname, sctx_T *ret_sctx)
 {
   static scid_T last_current_SID = 0;

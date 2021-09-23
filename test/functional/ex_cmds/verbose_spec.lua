@@ -7,10 +7,11 @@ local exec_capture = helpers.exec_capture
 local write_file = helpers.write_file
 local call_viml_function = helpers.meths.call_function
 
-describe('lua verbose:', function()
+describe('lua :verbose', function()
+  -- All test cases below use the same nvim instance.
   clear{args={'-V1'}}
 
-  local script_file = 'test_luafile.lua'
+  local script_file = 'test_verbose.lua'
   local current_dir = call_viml_function('getcwd', {})
   current_dir = call_viml_function('fnamemodify', {current_dir, ':~'})
   local separator = helpers.get_pathsep()
@@ -39,7 +40,7 @@ endfunction\
     os.remove(script_file)
   end)
 
-  it('Shows last set location when option is set through api from lua', function()
+  it('"Last set" for option set by Lua', function()
     local result = exec_capture(':verbose set hlsearch?')
     eq(string.format([[
 nohlsearch
@@ -47,7 +48,7 @@ nohlsearch
        table.concat{current_dir, separator, script_file}), result)
   end)
 
-  it('Shows last set location when option is set through vim.o shorthands', function()
+  it('"Last set" for option set by vim.o', function()
     local result = exec_capture(':verbose set expandtab?')
     eq(string.format([[
   expandtab
@@ -55,7 +56,7 @@ nohlsearch
        table.concat{current_dir, separator, script_file}), result)
   end)
 
-  it('Shows last set location when option is set through vim.opt', function()
+  it('"Last set" for option set by vim.opt', function()
     local result = exec_capture(':verbose set number?')
     eq(string.format([[
   number
@@ -63,7 +64,7 @@ nohlsearch
        table.concat{current_dir, separator, script_file}), result)
   end)
 
-  it('Shows last set location when keymap is set through api from lua', function()
+  it('"Last set" for keymap set by Lua', function()
     local result = exec_capture(':verbose map <leader>key')
     eq(string.format([[
 
@@ -72,7 +73,7 @@ n  \key        * :echo "test"<CR>
        table.concat{current_dir, separator, script_file}), result)
   end)
 
-  it('Shows last set location for autocmd through vim.api.nvim_exec', function()
+  it('"Last set" for autocmd by vim.api.nvim_exec', function()
     local result = exec_capture(':verbose autocmd test_group Filetype c')
     eq(string.format([[
 --- Autocommands ---
@@ -81,7 +82,7 @@ test_group  FileType
 	Last set from %s line 6]],
        table.concat{current_dir, separator, script_file}), result)
   end)
-  it('Shows last set location command is set through nvim_command', function()
+  it('"Last set" for command defined by nvim_command', function()
     local result = exec_capture(':verbose command Bdelete')
     eq(string.format([[
     Name              Args Address Complete    Definition
@@ -89,7 +90,7 @@ test_group  FileType
 	Last set from %s line 11]],
        table.concat{current_dir, separator, script_file}), result)
   end)
-  it('Shows last set location for function', function()
+  it('"Last set for function', function()
     local result = exec_capture(':verbose function Close_Window')
     eq(string.format([[
    function Close_Window() abort

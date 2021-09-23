@@ -1847,7 +1847,7 @@ cleanup:
   return retval;
 }
 
-// Set lua sctx for verbose output when a lua file is being sourced
+// Sets the editor "script context" during Lua execution. Used by :verbose.
 // @param[out] current
 void nlua_set_sctx(sctx_T *current)
 {

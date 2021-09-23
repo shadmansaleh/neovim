@@ -2095,7 +2095,7 @@ bool parse_float_config(Dictionary config, FloatConfig *fconfig, bool reconf, bo
 /// @param channel_id     api clients id. Used to determine if it's a internal
 ///                       call or a rpc call.
 /// @return returns       previous value of current_sctx. To be used
-///                       to be used for restoreing sctx to previos state.
+///                       to be used for restoring sctx to previous state.
 sctx_T api_set_sctx(uint64_t channel_id)
 {
   sctx_T old_current_sctx = current_sctx;
