@@ -463,6 +463,79 @@ static int nlua_stricmp(lua_State *const lstate) FUNC_ATTR_NONNULL_ALL
   return 1;
 }
 
+/// Add or remove keymap
+static int nlua_modify_keymap(lua_State *const lstate)
+{
+  Buffer buffer = -1;
+  String mode = STRING_INIT;
+  String lhs = STRING_INIT;
+  String rhs = STRING_INIT;
+  LuaRef rhs_lua = -1;
+  KeyDict_keymap opts = { 0 };
+  Error err = ERROR_INIT;
+  bool is_unmap = false;
+
+  if (lua_gettop(lstate) != 5) {
+    api_set_error(&err, kErrorTypeValidation, "Expected 5 arguments");
+    goto theend;
+  }
+  if (!nlua_is_deferred_safe()) {
+    return luaL_error(lstate, e_luv_api_disabled, "_modify_keymap");
+  }
+
+  nlua_pop_keydict(lstate, &opts, KeyDict_keymap_get_field, &err);
+  if (ERROR_SET(&err)) {
+    goto theend;
+  }
+
+  if (lua_type(lstate, -1) == LUA_TNIL) {
+    lua_pop(lstate, 1);
+    is_unmap = true;
+    rhs.data = "";         // modify_keymap gets a panic attack is data is NULL
+  } else if (lua_type(lstate, -1) == LUA_TFUNCTION) {
+    rhs_lua = nlua_pop_LuaRef(lstate, &err);
+  } else {
+    rhs = nlua_pop_String(lstate, &err);
+  }
+  if (ERROR_SET(&err)) {
+    goto theend;
+  }
+
+  lhs = nlua_pop_String(lstate, &err);
+  if (ERROR_SET(&err)) {
+    goto theend;
+  }
+
+  mode = nlua_pop_String(lstate, &err);
+  if (ERROR_SET(&err)) {
+    goto theend;
+  }
+
+  buffer = nlua_pop_Buffer(lstate, &err);
+  if (ERROR_SET(&err)) {
+    goto theend;
+  }
+
+  modify_keymap(buffer, is_unmap, mode, lhs, rhs, rhs_lua, &opts, &err);
+theend:
+  api_free_string(mode);
+  api_free_string(lhs);
+  if (!is_unmap) {
+    api_free_string(rhs);
+  }
+  api_free_keydict_keymap(&opts);
+
+  if (ERROR_SET(&err)) {
+    nlua_unref(lstate, rhs_lua);
+    luaL_where(lstate, 1);
+    lua_pushstring(lstate, err.msg);
+    api_clear_error(&err);
+    lua_concat(lstate, 2);
+    return lua_error(lstate);
+  }
+
+  return 0;
+}
 
 void nlua_state_add_stdlib(lua_State *const lstate)
 {
@@ -521,4 +594,8 @@ void nlua_state_add_stdlib(lua_State *const lstate)
 
   lua_cjson_new(lstate);
   lua_setfield(lstate, -2, "json");
+
+  // vim.keymap
+  lua_pushcfunction(lstate, &nlua_modify_keymap);
+  lua_setfield(lstate, -2, "_modify_keymap");
 }

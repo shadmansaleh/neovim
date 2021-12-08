@@ -1562,7 +1562,7 @@ ArrayOf(Dictionary) nvim_get_keymap(String mode)
 void nvim_set_keymap(String mode, String lhs, String rhs, Dict(keymap) *opts, Error *err)
   FUNC_API_SINCE(6)
 {
-  modify_keymap(-1, false, mode, lhs, rhs, opts, err);
+  modify_keymap(-1, false, mode, lhs, rhs, -1, opts, err);
 }
 
 /// Unmaps a global |mapping| for the given mode.

@@ -861,7 +861,7 @@ void nvim_buf_set_keymap(Buffer buffer, String mode, String lhs, String rhs, Dic
                          Error *err)
   FUNC_API_SINCE(6)
 {
-  modify_keymap(buffer, false, mode, lhs, rhs, opts, err);
+  modify_keymap(buffer, false, mode, lhs, rhs, -1, opts, err);
 }
 
 /// Unmaps a buffer-local |mapping| for the given mode.
@@ -873,7 +873,7 @@ void nvim_buf_del_keymap(Buffer buffer, String mode, String lhs, Error *err)
   FUNC_API_SINCE(6)
 {
   String rhs = { .data = "", .size = 0 };
-  modify_keymap(buffer, true, mode, lhs, rhs, NULL, err);
+  modify_keymap(buffer, true, mode, lhs, rhs, -1, NULL, err);
 }
 
 /// Gets a map of buffer-local |user-commands|.
