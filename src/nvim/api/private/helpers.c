@@ -592,7 +592,7 @@ Array string_to_array(const String input, bool crlf)
 ///                   buffer, or -1 to signify global behavior ("all buffers")
 /// @param  is_unmap  When true, removes the mapping that matches {lhs}.
 void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs, String rhs,
-                   Dict(keymap) *opts, Error *err)
+                   LuaRef rhs_lua, Dict(keymap) *opts, Error *err)
 {
   bool global = (buffer == -1);
   if (global) {
@@ -623,7 +623,7 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs, String
   parsed_args.buffer = !global;
 
   set_maparg_lhs_rhs((char_u *)lhs.data, lhs.size,
-                     (char_u *)rhs.data, rhs.size,
+                     (char_u *)rhs.data, rhs.size, rhs_lua,
                      CPO_TO_CPO_FLAGS, &parsed_args);
 
   if (parsed_args.lhs_len > MAXMAPLEN) {
@@ -658,7 +658,7 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs, String
   bool is_noremap = parsed_args.noremap;
   assert(!(is_unmap && is_noremap));
 
-  if (!is_unmap && (parsed_args.rhs_len == 0 && !parsed_args.rhs_is_noop)) {
+  if (!is_unmap && rhs_lua == -1 && (parsed_args.rhs_len == 0 && !parsed_args.rhs_is_noop)) {
     if (rhs.size == 0) {  // assume that the user wants RHS to be a <Nop>
       parsed_args.rhs_is_noop = true;
     } else {
@@ -668,9 +668,14 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs, String
       api_set_error(err, kErrorTypeValidation, "Parsing of nonempty RHS failed: %s", rhs.data);
       goto fail_and_free;
     }
-  } else if (is_unmap && parsed_args.rhs_len) {
-    api_set_error(err, kErrorTypeValidation,
-                  "Gave nonempty RHS in unmap command: %s", parsed_args.rhs);
+  } else if (is_unmap && (parsed_args.rhs_len || parsed_args.rhs_lua != -1)) {
+    if (parsed_args.rhs_len) {
+      api_set_error(err, kErrorTypeValidation,
+                    "Gave nonempty RHS in unmap command: %s", parsed_args.rhs);
+    } else {
+      api_set_error(err, kErrorTypeValidation, "Gave nonempty RHS for unmap");
+
+    }
     goto fail_and_free;
   }
 

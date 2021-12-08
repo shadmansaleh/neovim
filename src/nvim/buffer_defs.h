@@ -352,6 +352,7 @@ struct mapblock {
   char_u *m_keys;          // mapped from, lhs
   char_u *m_str;           // mapped to, rhs
   char_u *m_orig_str;      // rhs as entered by the user
+  LuaRef m_luaref;         // lua function reference as rhs
   int m_keylen;                 // strlen(m_keys)
   int m_mode;                   // valid mode
   int m_noremap;                // if non-zero no re-mapping for m_str

@@ -50,6 +50,7 @@ struct map_arguments {
 
   char_u *rhs;  /// The {rhs} of the mapping.
   size_t rhs_len;
+  LuaRef rhs_lua; /// lua function as rhs
   bool rhs_is_noop;  /// True when the {orig_rhs} is <nop>.
 
   char_u *orig_rhs;  /// The original text of the {rhs}.
@@ -57,7 +58,7 @@ struct map_arguments {
 };
 typedef struct map_arguments MapArguments;
 #define MAP_ARGUMENTS_INIT { false, false, false, false, false, false, false, \
-                             { 0 }, 0, NULL, 0, false, NULL, 0 }
+                             { 0 }, 0, NULL, 0, -1, false, NULL, 0 }
 
 #define KEYLEN_PART_KEY -1  // keylen value for incomplete key-code
 #define KEYLEN_PART_MAP -2  // keylen value for incomplete mapping

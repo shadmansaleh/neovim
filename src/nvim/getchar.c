@@ -2609,11 +2609,12 @@ int fix_input_buffer(char_u *buf, int len)
 /// @param[in] orig_lhs   Original mapping LHS, with characters to replace.
 /// @param[in] orig_lhs_len   `strlen` of orig_lhs.
 /// @param[in] orig_rhs   Original mapping RHS, with characters to replace.
+/// @param[in] rhs_lua   lua reference for lua maps. -1 means not a lua map.
 /// @param[in] orig_rhs_len   `strlen` of orig_rhs.
 /// @param[in] cpo_flags  See param docs for @ref replace_termcodes.
 /// @param[out] mapargs   MapArguments struct holding the replaced strings.
 void set_maparg_lhs_rhs(const char_u *orig_lhs, const size_t orig_lhs_len, const char_u *orig_rhs,
-                        const size_t orig_rhs_len, int cpo_flags, MapArguments *mapargs)
+                        const size_t orig_rhs_len, LuaRef rhs_lua, int cpo_flags, MapArguments *mapargs)
 {
   char_u *lhs_buf = NULL;
   char_u *rhs_buf = NULL;
@@ -2630,21 +2631,25 @@ void set_maparg_lhs_rhs(const char_u *orig_lhs, const size_t orig_lhs_len, const
   mapargs->lhs_len = STRLEN(replaced);
   STRLCPY(mapargs->lhs, replaced, sizeof(mapargs->lhs));
 
-  mapargs->orig_rhs_len = orig_rhs_len;
-  mapargs->orig_rhs = xcalloc(mapargs->orig_rhs_len + 1, sizeof(char_u));
-  STRLCPY(mapargs->orig_rhs, orig_rhs, mapargs->orig_rhs_len + 1);
+  if (rhs_lua == -1) {
+    mapargs->orig_rhs_len = orig_rhs_len;
+    mapargs->orig_rhs = xcalloc(mapargs->orig_rhs_len + 1, sizeof(char_u));
+    STRLCPY(mapargs->orig_rhs, orig_rhs, mapargs->orig_rhs_len + 1);
 
-  if (STRICMP(orig_rhs, "<nop>") == 0) {  // "<Nop>" means nothing
-    mapargs->rhs = xcalloc(1, sizeof(char_u));  // single null-char
-    mapargs->rhs_len = 0;
-    mapargs->rhs_is_noop = true;
+    if (STRICMP(orig_rhs, "<nop>") == 0) {  // "<Nop>" means nothing
+      mapargs->rhs = xcalloc(1, sizeof(char_u));  // single null-char
+      mapargs->rhs_len = 0;
+      mapargs->rhs_is_noop = true;
+    } else {
+      replaced = replace_termcodes(orig_rhs, orig_rhs_len, &rhs_buf,
+                                   false, true, true, cpo_flags);
+      mapargs->rhs_len = STRLEN(replaced);
+      mapargs->rhs_is_noop = false;
+      mapargs->rhs = xcalloc(mapargs->rhs_len + 1, sizeof(char_u));
+      STRLCPY(mapargs->rhs, replaced, mapargs->rhs_len + 1);
+    }
   } else {
-    replaced = replace_termcodes(orig_rhs, orig_rhs_len, &rhs_buf,
-                                 false, true, true, cpo_flags);
-    mapargs->rhs_len = STRLEN(replaced);
-    mapargs->rhs_is_noop = false;
-    mapargs->rhs = xcalloc(mapargs->rhs_len + 1, sizeof(char_u));
-    STRLCPY(mapargs->rhs, replaced, mapargs->rhs_len + 1);
+    mapargs->rhs_lua = rhs_lua;
   }
 
   xfree(lhs_buf);
@@ -2756,7 +2761,7 @@ int str_to_mapargs(const char_u *strargs, bool is_unmap, MapArguments *mapargs)
 
   size_t orig_rhs_len = STRLEN(rhs_start);
   set_maparg_lhs_rhs(lhs_to_replace, orig_lhs_len,
-                     rhs_start, orig_rhs_len,
+                     rhs_start, orig_rhs_len, -1,
                      CPO_TO_CPO_FLAGS, &parsed_args);
 
   xfree(lhs_to_replace);
