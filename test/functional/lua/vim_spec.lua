@@ -2304,8 +2304,59 @@ describe('vim.keymap', function()
       return GlobalCount
     ]])
 
-    feed("asdf")
+    feed('asdf\n')
 
     eq(1, exec_lua[[return GlobalCount ]])
+  end)
+
+  it('can make an expr mapping', function()
+    exec_lua [[
+      vim.keymap.nnoremap { 'aa', function() return vim.api.nvim_replace_termcodes(':lua SomeValue = 99<cr>', true, false, true) end, expr = true }
+    ]]
+
+    feed('aa')
+
+    eq(99, exec_lua[[return SomeValue ]])
+  end)
+
+  it('can overwrite a mapping', function()
+    eq(0, exec_lua [[
+      GlobalCount = 0
+      vim.keymap.nnoremap { 'asdf', function() GlobalCount = GlobalCount + 1 end }
+      return GlobalCount
+    ]])
+
+    feed('asdf\n')
+
+    eq(1, exec_lua[[return GlobalCount ]])
+
+    exec_lua [[
+      vim.keymap.nnoremap { 'asdf', function() GlobalCount = GlobalCount - 1 end }
+    ]]
+
+    feed('asdf\n')
+
+    eq(0, exec_lua[[return GlobalCount ]])
+  end)
+
+  it('can unmap a mapping', function()
+    eq(0, exec_lua [[
+      GlobalCount = 0
+      vim.keymap.nnoremap { 'asdf', function() GlobalCount = GlobalCount + 1 end }
+      return GlobalCount
+    ]])
+
+    feed('asdf\n')
+
+    eq(1, exec_lua[[return GlobalCount ]])
+
+    exec_lua [[
+      vim.keymap.unmap { 'asdf' }
+    ]]
+
+    feed('asdf\n')
+
+    eq(1, exec_lua[[return GlobalCount ]])
+    eq('\nNo mapping found', helpers.exec_capture('nmap asdf'))
   end)
 end)
