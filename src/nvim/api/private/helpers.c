@@ -706,7 +706,11 @@ void modify_keymap(Buffer buffer, bool is_unmap, String mode, String lhs, String
   }  // switch
 
 fail_and_free:
-  xfree(parsed_args.rhs);
+  if (parsed_args.rhs_lua != 1) {
+    xfree(parsed_args.rhs);
+  } else {
+    api_free_luaref(parsed_args.rhs_lua);
+  }
   xfree(parsed_args.orig_rhs);
   return;
 }

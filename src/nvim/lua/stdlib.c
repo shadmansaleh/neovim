@@ -463,7 +463,7 @@ static int nlua_stricmp(lua_State *const lstate) FUNC_ATTR_NONNULL_ALL
   return 1;
 }
 
-/// Set a new key map
+/// Add or remove keymap
 static int nlua_modify_keymap(lua_State *const lstate) {
   Buffer buffer = -1;
   String mode = STRING_INIT;
