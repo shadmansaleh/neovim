@@ -505,6 +505,7 @@ EXTERN long p_lines;        // 'lines'
 EXTERN long p_linespace;    // 'linespace'
 EXTERN char_u *p_lispwords;   // 'lispwords'
 EXTERN long p_ls;               // 'laststatus'
+EXTERN long p_gst;               // 'globalatatus'
 EXTERN long p_stal;             // 'showtabline'
 EXTERN char_u *p_lcs;         // 'listchars'
 

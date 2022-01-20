@@ -3535,6 +3535,7 @@ static char *set_chars_option(win_T *wp, char_u **varp, bool set)
     { &wp->w_p_fcs_chars.stl,     "stl",      ' '  },
     { &wp->w_p_fcs_chars.stlnc,   "stlnc",    ' '  },
     { &wp->w_p_fcs_chars.vert,    "vert",     9474 },  // │
+    { &wp->w_p_fcs_chars.horiz,    "horiz",   2014 },  // —
     { &wp->w_p_fcs_chars.fold,    "fold",     183  },  // ·
     { &wp->w_p_fcs_chars.foldopen,   "foldopen",  '-'  },
     { &wp->w_p_fcs_chars.foldclosed, "foldclose", '+'  },
@@ -3571,12 +3572,14 @@ static char *set_chars_option(win_T *wp, char_u **varp, bool set)
       // XXX: If ambiwidth=double then "|" and "·" take 2 columns, which is
       // forbidden (TUI limitation?). Set old defaults.
       fcs_tab[2].def = '|';
-      fcs_tab[6].def = '|';
       fcs_tab[3].def = '-';
+      fcs_tab[7].def = '|';
+      fcs_tab[4].def = '-';
     } else {
       fcs_tab[2].def = 9474;  // │
-      fcs_tab[6].def = 9474;  // │
-      fcs_tab[3].def = 183;   // ·
+      fcs_tab[3].def = 2014;  // —
+      fcs_tab[7].def = 9474;  // │
+      fcs_tab[4].def = 183;   // ·
     }
   }
 
@@ -4446,6 +4449,9 @@ static char *set_num_option(int opt_idx, char_u *varp, long value, char *errbuf,
     win_setminwidth();
   } else if (pp == &p_ls) {
     last_status(false);  // (re)set last window status line.
+  } else if (pp == &p_gst) {
+    last_status(true);  // (re)set last window status line.
+    status_redraw_all();
   } else if (pp == &p_stal) {
     // (re)set tab page line
     shell_new_rows();   // recompute window positions and heights

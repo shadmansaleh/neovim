@@ -5354,12 +5354,14 @@ static void win_redr_status(win_T *wp)
    * May need to draw the character below the vertical separator.
    */
   if (wp->w_vsep_width != 0 && wp->w_status_height != 0 && redrawing()) {
-    if (stl_connected(wp)) {
-      fillchar = fillchar_status(&attr, wp);
-    } else {
-      fillchar = fillchar_vsep(wp, &attr);
+    if (!p_gst || Rows - p_ch - 1 == W_ENDROW(wp)) {
+      if (stl_connected(wp)) {
+        fillchar = fillchar_status(&attr, wp);
+      } else {
+        fillchar = fillchar_vsep(wp, &attr);
+      }
+      grid_putchar(&default_grid, fillchar, W_ENDROW(wp), W_ENDCOL(wp), attr);
     }
-    grid_putchar(&default_grid, fillchar, W_ENDROW(wp), W_ENDCOL(wp), attr);
   }
   busy = FALSE;
 }
@@ -5484,6 +5486,8 @@ static void win_redr_custom(win_T *wp, bool draw_ruler)
   int use_sandbox = false;
   win_T *ewp;
   int p_crb_save;
+  bool redraw_as_global = p_gst && wp == curwin;
+  bool win_at_bottom = Rows - p_ch -1 == W_ENDROW(wp);
 
   ScreenGrid *grid = &default_grid;
 
@@ -5505,9 +5509,14 @@ static void win_redr_custom(win_T *wp, bool draw_ruler)
     maxwidth = Columns;
     use_sandbox = was_set_insecurely(wp, "tabline", 0);
   } else {
-    row = W_ENDROW(wp);
+draw_again:  // To draw win serperator statusline for curwin when global status
+             // is enabled & current win isn't a most bottom win.
+    if (p_gst && wp != curwin && win_at_bottom) {
+      return;  // we don't need to redraw window statusline below global status
+    }
+    row = redraw_as_global  ? Rows - p_ch - 1 : W_ENDROW(wp);
     fillchar = fillchar_status(&attr, wp);
-    maxwidth = wp->w_width;
+    maxwidth = redraw_as_global ? Columns : wp->w_width;
 
     if (draw_ruler) {
       stl = p_ruf;
@@ -5540,7 +5549,10 @@ static void win_redr_custom(win_T *wp, bool draw_ruler)
 
       use_sandbox = was_set_insecurely(wp, "rulerformat", 0);
     } else {
-      if (*wp->w_p_stl != NUL) {
+      if (p_gst && !redraw_as_global) {
+        stl = (char_u *)"";  // When global status is used fill statusline
+                             // with filchar.horiz on non current windows.
+      } else if (*wp->w_p_stl != NUL) {
         stl = wp->w_p_stl;
       } else {
         stl = p_stl;
@@ -5548,7 +5560,11 @@ static void win_redr_custom(win_T *wp, bool draw_ruler)
       use_sandbox = was_set_insecurely(wp, "statusline", *wp->w_p_stl == NUL ? 0 : OPT_LOCAL);
     }
 
-    col += wp->w_wincol;
+    if (redraw_as_global) {
+      col = 0;
+    } else {
+      col += wp->w_wincol;
+    }
   }
 
   if (maxwidth <= 0) {
@@ -5609,6 +5625,10 @@ static void win_redr_custom(win_T *wp, bool draw_ruler)
   // Make sure to use an empty string instead of p, if p is beyond buf + len.
   grid_puts(grid, p >= buf + len ? (char_u *)"" : p, row, col,
             curattr);
+  if (redraw_as_global && ! win_at_bottom) {
+    redraw_as_global = false;
+    goto draw_again;
+  }
 
   grid_puts_line_flush(false);
 
@@ -7431,12 +7451,13 @@ int fillchar_status(int *attr, win_T *wp)
 {
   int fill;
   bool is_curwin = (wp == curwin);
+  bool win_at_bottom = Rows - p_ch - 1 == W_ENDROW(wp);
   if (is_curwin) {
     *attr = win_hl_attr(wp, HLF_S);
-    fill = wp->w_p_fcs_chars.stl;
+    fill = (!p_gst || win_at_bottom) ? wp->w_p_fcs_chars.stl : wp->w_p_fcs_chars.horiz;
   } else {
     *attr = win_hl_attr(wp, HLF_SNC);
-    fill = wp->w_p_fcs_chars.stlnc;
+    fill = p_gst ? wp->w_p_fcs_chars.horiz : wp->w_p_fcs_chars.stlnc;
   }
   // Use fill when there is highlighting, and highlighting of current
   // window differs, or the fillchars differ, or this is not the

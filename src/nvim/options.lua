@@ -990,6 +990,14 @@ return {
       defaults={if_true=false}
     },
     {
+      full_name='globalstatus', abbreviation='gst',
+      short_desc=N_("whether to use global statusline"),
+      type='bool', scope={'global'},
+      secure=true,
+      varname='p_gst',
+      defaults={if_true=false}
+    },
+    {
       full_name='grepformat', abbreviation='gfm',
       short_desc=N_("format of 'grepprg' output"),
       type='string', list='onecomma', scope={'global'},
