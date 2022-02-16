@@ -871,6 +871,11 @@ describe('nvim_set_keymap, nvim_del_keymap', function()
     eq('\nNo mapping found', helpers.exec_capture('nmap asdf'))
   end)
 
+  it ('shows <nop> as map rhs', function()
+    meths.set_keymap('n', 'asdf', '<nop>', {})
+    eq('\nn  asdf          <Nop>', helpers.exec_capture('nmap asdf'))
+  end)
+
   it('can set descriptions on keymaps', function()
     meths.set_keymap('n', 'lhs', 'rhs', {desc="map description"})
     eq(generate_mapargs('n', 'lhs', 'rhs', {desc="map description"}), get_mapargs('n', 'lhs'))
