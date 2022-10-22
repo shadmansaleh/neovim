@@ -2861,6 +2861,9 @@ static void display_showcmd(void)
   grid_puts_line_flush(false);
 }
 
+const char *get_showcmd(void) {
+  return (const char*)showcmd_buf;
+}
 /// When "check" is false, prepare for commands that scroll the window.
 /// When "check" is true, take care of scroll-binding after the window has
 /// scrolled.  Called from normal_cmd() and edit().

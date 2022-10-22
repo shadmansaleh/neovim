@@ -24,6 +24,7 @@
 #include "nvim/ui.h"
 #include "nvim/undo.h"
 #include "nvim/vim.h"
+#include "nvim/normal.h"
 #include "nvim/window.h"
 
 // Determines how deeply nested %{} blocks will be evaluated in statusline.
@@ -1403,6 +1404,10 @@ int build_stl_str_hl(win_T *wp, char *out, size_t outlen, char *fmt, int use_san
         fmt_p++;
       }
       continue;
+    }
+    case STL_SHOWCMD: {
+      str = get_showcmd();
+      break;
     }
     }
 

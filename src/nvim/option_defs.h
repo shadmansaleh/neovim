@@ -342,6 +342,7 @@ enum {
   STL_TABPAGENR       = 'T',  ///< Tab page label nr.
   STL_TABCLOSENR      = 'X',  ///< Tab page close nr.
   STL_CLICK_FUNC      = '@',  ///< Click region start.
+  STL_SHOWCMD         = 'C',  /// showcmd output.
 };
 /// C string containing all 'statusline' option flags
 #define STL_ALL ((char[]) { \
@@ -352,7 +353,7 @@ enum {
     STL_PREVIEWFLAG, STL_PREVIEWFLAG_ALT, STL_MODIFIED, STL_MODIFIED_ALT, \
     STL_QUICKFIX, STL_PERCENTAGE, STL_ALTPERCENT, STL_ARGLISTSTAT, STL_PAGENUM, \
     STL_VIM_EXPR, STL_SEPARATE, STL_TRUNCMARK, STL_USER_HL, STL_HIGHLIGHT, \
-    STL_TABPAGENR, STL_TABCLOSENR, STL_CLICK_FUNC, \
+    STL_TABPAGENR, STL_TABCLOSENR, STL_CLICK_FUNC, STL_SHOWCMD,\
     0, \
   })
 
