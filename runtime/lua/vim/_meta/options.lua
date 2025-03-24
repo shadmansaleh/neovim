@@ -6430,6 +6430,7 @@ vim.wo.stc = vim.wo.statuscolumn
 --- S S   'showcmd' content, see 'showcmdloc'.
 --- a S   Argument list status as in default title.  ({current} of {max})
 ---       Empty if the argument file count is zero or one.
+--- u S   'ruler' content see 'rulerformat'
 --- { NF  Evaluate expression between "%{" and "}" and substitute result.
 ---       Note that there is no "%" before the closing "}".  The
 ---       expression cannot contain a "}" character, call a function to

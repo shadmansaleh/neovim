@@ -1997,7 +1997,7 @@ Dict nvim_eval_statusline(String str, Dict(eval_statusline) *opts, Arena *arena,
   int statuscol_lnum = 0;
 
   if (str.size < 2 || memcmp(str.data, "%!", 2) != 0) {
-    const char *const errmsg = check_stl_option(str.data);
+    const char *const errmsg = check_stl_option(str.data, false);
     VALIDATE(!errmsg, "%s", errmsg, {
       return result;
     });

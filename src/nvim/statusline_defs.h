@@ -47,7 +47,10 @@ typedef enum {
   STL_TABPAGENR       = 'T',  ///< Tab page label nr.
   STL_TABCLOSENR      = 'X',  ///< Tab page close nr.
   STL_CLICK_FUNC      = '@',  ///< Click region start.
+  STL_RULER           = 'u',  ///< Insert Ruler based on rulerfmt
 } StlFlag;
+
+#define STL_DEFAULT_RULER_FMT "%-14.(%l,%c%V%) %P"
 
 /// Status line click definition
 typedef struct {

@@ -270,7 +270,7 @@ int check_signcolumn(char *scl, win_T *wp)
 
 /// Check validity of options with the 'statusline' format.
 /// Return an untranslated error message or NULL.
-const char *check_stl_option(char *s)
+const char *check_stl_option(char *s, bool check_ruler)
 {
   int groupdepth = 0;
   static char errbuf[ERR_BUFLEN];
@@ -315,6 +315,9 @@ const char *check_stl_option(char *s)
       continue;
     }
     if (vim_strchr(STL_ALL, (uint8_t)(*s)) == NULL) {
+      return illegal_char(errbuf, sizeof(errbuf), (uint8_t)(*s));
+    }
+    if (check_ruler && *s == STL_RULER) {
       return illegal_char(errbuf, sizeof(errbuf), (uint8_t)(*s));
     }
     if (*s == '{') {
@@ -1797,19 +1800,19 @@ static const char *did_set_statustabline_rulerformat(optset_T *args, bool rulerf
       s++;
     }
     int wid = getdigits_int(&s, true, 0);
-    if (wid && *s == '(' && (errmsg = check_stl_option(p_ruf)) == NULL) {
+    if (wid && *s == '(' && (errmsg = check_stl_option(p_ruf, rulerformat)) == NULL) {
       ru_wid = wid;
     } else {
       // Validate the flags in 'rulerformat' only if it doesn't point to
       // a custom function ("%!" flag).
       if ((*varp)[1] != '!') {
-        errmsg = check_stl_option(p_ruf);
+        errmsg = check_stl_option(p_ruf, rulerformat);
       }
     }
   } else if (rulerformat || s[0] != '%' || s[1] != '!') {
     // check 'statusline', 'winbar', 'tabline' or 'statuscolumn'
     // only if it doesn't start with "%!"
-    errmsg = check_stl_option(s);
+    errmsg = check_stl_option(s, rulerformat);
   }
   if (rulerformat && errmsg == NULL) {
     comp_col();
@@ -1855,7 +1858,7 @@ static const char *did_set_titleiconstring(optset_T *args, int flagval)
   char **varp = (char **)args->os_varp;
 
   // NULL => statusline syntax
-  if (vim_strchr(*varp, '%') && check_stl_option(*varp) == NULL) {
+  if (vim_strchr(*varp, '%') && check_stl_option(*varp, false) == NULL) {
     stl_syntax |= flagval;
   } else {
     stl_syntax &= ~flagval;

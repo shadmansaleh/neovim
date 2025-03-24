@@ -1658,6 +1658,34 @@ stcsign:
       }
       break;
 
+    case STL_RULER: {
+      if (!p_ru) {
+        continue;
+      }
+      char *ruler_fmt = (*p_ruf != NUL) ? p_ruf : STL_DEFAULT_RULER_FMT;
+
+      char *current_pos = fmt_p - 2;
+      size_t parsed_usefmt = (size_t)(current_pos - usefmt);
+      size_t ruler_length = strlen(ruler_fmt);
+      size_t fmt_length = strlen(fmt_p);
+      size_t new_fmt_len = parsed_usefmt + ruler_length + fmt_length + 1;
+      char *new_fmt = xmalloc(new_fmt_len * sizeof(char));
+      char *new_fmt_p = new_fmt;
+
+      new_fmt_p = (char *)memcpy(new_fmt_p, usefmt, parsed_usefmt) + parsed_usefmt;
+      new_fmt_p = (char *)memcpy(new_fmt_p, ruler_fmt, ruler_length) + ruler_length;
+      new_fmt_p = (char *)memcpy(new_fmt_p, fmt_p, fmt_length) + fmt_length;
+      *new_fmt_p = 0;
+      new_fmt_p = NULL;
+
+      if (usefmt != fmt) {
+        xfree(usefmt);
+      }
+      usefmt = new_fmt;
+      fmt_p = usefmt + parsed_usefmt;
+      continue;
+    }
+
     case STL_HIGHLIGHT: {
       // { The name of the highlight is surrounded by `#`
       char *t = fmt_p;
