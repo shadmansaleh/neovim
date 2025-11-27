@@ -1590,23 +1590,29 @@ static void init_prompt(int cmdchar_todo)
 {
   char *prompt = prompt_text();
 
+  // adjust mark if the prompt-mark is lower then the last line
+  if (curbuf->b_ml.ml_line_count < curbuf->b_prompt_start.mark.lnum) {
+    ml_append(curbuf->b_ml.ml_line_count, "", 0, false);
+    curbuf->b_prompt_start.mark.lnum = curbuf->b_ml.ml_line_count;
+  }
+
   if (curwin->w_cursor.lnum < curbuf->b_prompt_start.mark.lnum) {
     curwin->w_cursor.lnum = curbuf->b_prompt_start.mark.lnum;
   }
+
   char *text = get_cursor_line_ptr();
   if ((curbuf->b_prompt_start.mark.lnum == curwin->w_cursor.lnum
-       && strncmp(text, prompt, strlen(prompt)) != 0)
-      || curbuf->b_prompt_start.mark.lnum > curwin->w_cursor.lnum) {
-    // prompt is missing, insert it or append a line with it
+       && strncmp(text, prompt, strlen(prompt)) != 0)) {
+    // prompt is missing, insert it if line is empty or prepend the text on prompt-line
     if (*text == NUL) {
-      ml_replace(curbuf->b_ml.ml_line_count, prompt, true);
+      ml_replace(curbuf->b_prompt_start.mark.lnum, prompt, true);
     } else {
-      ml_append(curbuf->b_ml.ml_line_count, prompt, 0, false);
-      curbuf->b_prompt_start.mark.lnum += 1;
+      char *prompt_and_line = concat_str(prompt, text);
+      ml_replace(curbuf->b_prompt_start.mark.lnum, prompt_and_line, false);
     }
-    curwin->w_cursor.lnum = curbuf->b_ml.ml_line_count;
-    coladvance(curwin, MAXCOL);
-    inserted_bytes(curbuf->b_ml.ml_line_count, 0, 0, (colnr_T)strlen(prompt));
+    curwin->w_cursor.lnum = curbuf->b_prompt_start.mark.lnum;
+    inserted_bytes(curwin->w_cursor.lnum, 0, 0, (colnr_T)strlen(prompt));
+    // inserted_bytes(curbuf->b_ml.ml_line_count, 0, 0, (colnr_T)strlen(prompt));
   }
 
   // Insert always starts after the prompt, allow editing text after it.
