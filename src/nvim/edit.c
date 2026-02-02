@@ -1586,6 +1586,52 @@ char *prompt_text(void)
   return buf_prompt_text(curbuf);
 }
 
+void buf_update_prompt_text(buf_T *buf, const char *new_prompt)
+{
+  if (buf->b_prompt_start.mark.lnum > buf->b_ml.ml_line_count) {
+    // In case the mark is set to a non-existent line.
+    buf->b_prompt_start.mark.lnum = buf->b_ml.ml_line_count;
+  }
+
+  linenr_T prompt_lno = buf->b_prompt_start.mark.lnum;
+  char *old_prompt = buf->b_prompt_text != NULL ? buf->b_prompt_text : "";
+  char *old_line = ml_get_buf(buf, prompt_lno);
+  new_prompt = new_prompt != NULL ? new_prompt : "";
+  old_line = old_line != NULL ? old_line : "";
+
+  int old_prompt_len = (int)strlen(old_prompt);
+  int new_prompt_len = (int)strlen(new_prompt);
+  int old_line_len = (int)strlen(old_line);
+
+  if (buf->b_prompt_start.mark.col < old_prompt_len
+      || old_line_len < curbuf->b_prompt_start.mark.col
+      || strequal(old_prompt, old_line + curbuf->b_prompt_start.mark.col - old_prompt_len) != 0) {
+    // in case if for some odd reason the old prompt is missing
+    // replace the prompt line
+    ml_replace_buf(buf, prompt_lno, (char *)new_prompt, true, false);
+    if (curwin->w_buffer == buf) {
+      coladvance(curwin, (colnr_T)new_prompt_len);
+    }
+  } else {
+    char *new_line = concat_str(new_prompt, old_line + buf->b_prompt_start.mark.col);
+    if (ml_replace_buf(buf, prompt_lno, new_line, false, false) != OK) {
+      xfree(new_line);
+    }
+    if (curwin->w_buffer == buf) {
+      coladvance(curwin, (colnr_T)((int)curwin->w_cursor.col + new_prompt_len - old_prompt_len));
+    }
+  }
+
+  changed_lines_redraw_buf(buf, prompt_lno, prompt_lno + 1, 0);
+  redraw_buf_later(buf, UPD_INVERTED);
+
+  buf->b_prompt_start.mark.col = (colnr_T)new_prompt_len;
+
+  // clear old prompt text and replace with the new one
+  xfree(buf->b_prompt_text);
+  buf->b_prompt_text = xstrdup(new_prompt);
+}
+
 // Prepare for prompt mode: Make sure the last line has the prompt text.
 // Move the cursor to this line.
 static void init_prompt(int cmdchar_todo)

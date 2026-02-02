@@ -14,6 +14,7 @@
 #include "nvim/autocmd_defs.h"
 #include "nvim/buffer_defs.h"
 #include "nvim/channel.h"
+#include "nvim/edit.h"
 #include "nvim/errors.h"
 #include "nvim/eval.h"
 #include "nvim/eval/encode.h"
@@ -1063,6 +1064,5 @@ void f_prompt_setprompt(typval_T *argvars, typval_T *rettv, EvalFuncData fptr)
   }
 
   const char *text = tv_get_string(&argvars[1]);
-  xfree(buf->b_prompt_text);
-  buf->b_prompt_text = xstrdup(text);
+  buf_update_prompt_text(buf, text);
 }
